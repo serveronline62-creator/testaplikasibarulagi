@@ -6,149 +6,1708 @@
     <title>💬 Ja'O Chating & Call</title>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js">
+    </script>
 
     <!-- Emoji Picker -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.2/index.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.2/index.js">
+    </script>
 
     <!-- Font Awesome 6 (Free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
 
     <style>
         /* ----- RESET & GLOBAL ----- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             background: #e5ddd5;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
+
+        /* ----- LOGIN OVERLAY (Full Screen) ----- */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.4s ease;
+        }
+        .login-overlay.hidden {
+            display: none;
+        }
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .login-card {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 40px 32px 32px;
+            max-width: 420px;
+            width: 92%;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            animation: slideUp 0.5s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .login-card::-webkit-scrollbar {
+            width: 4px;
+        }
+        .login-card::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 8px;
+        }
+
+        .login-card .login-avatar {
+            width: 72px;
+            height: 72px;
+            background: #00a884;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 32px;
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(0, 168, 132, 0.3);
+        }
+        .login-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+        .login-card .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .login-card .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .login-card .login-form input {
+            padding: 14px 18px;
+            border: 2px solid #e8e8e8;
+            border-radius: 16px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #f8f8f8;
+        }
+        .login-card .login-form input:focus {
+            border-color: #00a884;
+            box-shadow: 0 0 0 4px rgba(0, 168, 132, 0.12);
+            background: #fff;
+        }
+
+        .login-card .login-btn {
+            padding: 14px;
+            background: #00a884;
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .login-card .login-btn:hover {
+            background: #008f72;
+        }
+        .login-card .login-btn:active {
+            transform: scale(0.97);
+        }
+        .login-card .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .login-card .login-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 8px 0 4px;
+            color: #bbb;
+            font-size: 13px;
+        }
+        .login-card .login-divider::before,
+        .login-card .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .login-card .login-error {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 4px;
+            min-height: 20px;
+        }
+
+        /* ----- CHAT CONTAINER ----- */
         .chat-container {
-            width: 100%; max-width: 520px; background: #ffffff;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); overflow: hidden;
-            display: flex; flex-direction: column; height: 100vh; max-height: 100vh;
-            border: none; border-radius: 0; position: relative;
+            width: 100%;
+            max-width: 520px;
+            background: #ffffff;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+            border: none;
+            border-radius: 0;
+            position: relative;
         }
         @media (min-width: 600px) {
-            .chat-container { height: 90vh; max-height: 700px; border-radius: 28px; border: 1px solid rgba(0,0,0,0.04); margin: 16px; }
+            .chat-container {
+                height: 90vh;
+                max-height: 700px;
+                border-radius: 28px;
+                border: 1px solid rgba(0, 0, 0, 0.04);
+                margin: 16px;
+            }
         }
 
         /* ----- HEADER ----- */
-        .chat-header { background: #00a884; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; position: relative; z-index: 10; }
-        .chat-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #00a884; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .chat-header .info { flex: 1; color: #fff; }
-        .chat-header .info h1 { font-size: 18px; font-weight: 600; line-height: 1.2; }
-        .chat-header .info .status { font-size: 13px; color: #d9fdd3; display: flex; align-items: center; gap: 4px; }
-        .chat-header .info .status::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #25d366; border-radius: 50%; animation: pulse-dot 1.8s ease-in-out infinite; }
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-        .chat-header .actions { display: flex; gap: 6px; color: #fff; align-items: center; }
-        .chat-header .actions button, .chat-header .actions .menu-dots { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 6px; border-radius: 50%; transition: background 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .chat-header .actions button:hover, .chat-header .actions .menu-dots:hover { background: rgba(255,255,255,0.2); }
+        .chat-header {
+            background: #00a884;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            position: relative;
+            z-index: 10;
+        }
+        .chat-header .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #00a884;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .chat-header .info {
+            flex: 1;
+            color: #fff;
+        }
+        .chat-header .info h1 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        .chat-header .info .status {
+            font-size: 13px;
+            color: #d9fdd3;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .chat-header .info .status::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #25d366;
+            border-radius: 50%;
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+        }
+        .chat-header .actions {
+            display: flex;
+            gap: 4px;
+            color: #fff;
+            align-items: center;
+        }
+        .chat-header .actions button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+        }
+        .chat-header .actions button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .chat-header .actions button:active {
+            transform: scale(0.9);
+        }
+        .chat-header .actions .menu-dots {
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 6px;
+            user-select: none;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-header .actions .menu-dots:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.2);
+        }
 
-        .header-dropdown { position: absolute; right: 12px; top: 60px; background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); padding: 8px 0; min-width: 200px; display: none; z-index: 1100; }
-        .header-dropdown.show { display: block; }
-        .header-dropdown .drop-item { padding: 10px 18px; font-size: 14px; color: #1a1a1a; cursor: pointer; display: flex; align-items: center; gap: 12px; border: none; background: transparent; width: 100%; text-align: left; }
-        .header-dropdown .drop-item:hover { background: #f0f0f0; }
-        .header-dropdown .drop-item.danger { color: #e74c3c; }
-        .header-dropdown .drop-item.danger:hover { background: #fde8e8; }
+        .header-dropdown {
+            position: absolute;
+            right: 12px;
+            top: 60px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            padding: 8px 0;
+            min-width: 200px;
+            display: none;
+            opacity: 0;
+            transform: scale(0.92);
+            transition: opacity 0.12s, transform 0.12s;
+            z-index: 1100;
+            overflow: hidden;
+        }
+        .header-dropdown.show {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+        .header-dropdown .drop-item {
+            padding: 10px 18px;
+            font-size: 14px;
+            color: #1a1a1a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.1s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+        .header-dropdown .drop-item:hover {
+            background: #f0f0f0;
+        }
+        .header-dropdown .drop-item:active {
+            background: #e0e0e0;
+        }
+        .header-dropdown .drop-item .icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        .header-dropdown .drop-item.danger {
+            color: #e74c3c;
+        }
+        .header-dropdown .drop-item.danger:hover {
+            background: #fde8e8;
+        }
+        .header-dropdown .divider {
+            height: 1px;
+            background: #e8e8e8;
+            margin: 4px 12px;
+        }
+        .header-dropdown .drop-item.logout {
+            color: #e74c3c;
+            border-top: 1px solid #e8e8e8;
+            margin-top: 4px;
+            padding-top: 10px;
+        }
+        .header-dropdown .drop-item.logout:hover {
+            background: #fde8e8;
+        }
 
         /* ----- MESSAGE AREA ----- */
-        .messages-wrapper { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; background: #efeae2; scroll-behavior: smooth; }
-        .message { display: flex; flex-direction: column; max-width: 82%; animation: fade-in 0.2s ease; }
-        .message.own { align-self: flex-end; align-items: flex-end; }
-        .message.other { align-self: flex-start; align-items: flex-start; }
-        @keyframes fade-in { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
-        .message .bubble { padding: 9px 14px; border-radius: 16px; word-wrap: break-word; line-height: 1.5; font-size: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-        .message.own .bubble { background: #dcf8c6; border-bottom-right-radius: 4px; }
-        .message.other .bubble { background: #ffffff; border-bottom-left-radius: 4px; }
-        .message .sender { font-size: 12px; font-weight: 600; margin-bottom: 2px; padding-left: 4px; color: #4a4a4a; }
-        .message .footer { display: flex; align-items: center; gap: 4px; margin-top: 3px; padding: 0 4px; }
-        .message .time { font-size: 10px; color: #7a7a7a; }
+        .messages-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: #efeae2;
+            background-image: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 30%),
+                radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.15) 0%, transparent 40%);
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .messages-wrapper::-webkit-scrollbar {
+            width: 5px;
+        }
+        .messages-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .messages-wrapper::-webkit-scrollbar-thumb {
+            background: #b0a89e;
+            border-radius: 10px;
+        }
+
+        /* ----- DATE SEPARATOR ----- */
+        .date-separator {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 4px 0;
+            position: relative;
+        }
+        .date-separator .date-label {
+            background: #e1e1e1;
+            color: #4a4a4a;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            letter-spacing: 0.3px;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        /* ----- MESSAGE BUBBLE ----- */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: fade-in 0.2s ease;
+        }
+        .message.own {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .message.other {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .message .bubble {
+            padding: 9px 14px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 15px;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: background 0.1s;
+            cursor: pointer;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .message.own .bubble {
+            background: #dcf8c6;
+            color: #1a1a1a;
+            border-bottom-right-radius: 4px;
+        }
+        .message.own .bubble:hover {
+            background: #d0f0b8;
+        }
+        .message.other .bubble {
+            background: #ffffff;
+            color: #1a1a1a;
+            border-bottom-left-radius: 4px;
+        }
+        .message.other .bubble:hover {
+            background: #f5f5f5;
+        }
+
+        .message .bubble-image-wrapper {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            border-radius: 12px;
+            margin: 4px 0 6px 0;
+            overflow: hidden;
+            background: #e8e8e8;
+            cursor: pointer;
+        }
+        .message .bubble-image-wrapper img {
+            display: block;
+            max-width: 100%;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            cursor: pointer;
+            border-radius: 12px;
+        }
+        .message .bubble-image-wrapper .image-check {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0, 168, 132, 0.9);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .message .bubble-image-wrapper .image-check.hidden {
+            display: none;
+        }
+
+        .message .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 10px;
+            margin: 4px 0 6px 0;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s;
+            cursor: pointer;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+        .message .file-attachment:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .message .file-attachment .file-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+            width: 32px;
+            text-align: center;
+        }
+        .message .file-attachment .file-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        .message .file-attachment .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .message .file-attachment .file-size {
+            font-size: 12px;
+            color: #777;
+        }
+        .message .file-attachment .file-download {
+            font-size: 20px;
+            color: #00a884;
+            flex-shrink: 0;
+        }
+
+        .link-preview {
+            margin-top: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f0f0f0;
+            border: 1px solid #e0e0e0;
+            max-width: 100%;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .link-preview:hover {
+            background: #e8e8e8;
+        }
+        .link-preview .lp-image {
+            width: 100%;
+            height: auto;
+            max-height: 150px;
+            object-fit: cover;
+            background: #ddd;
+            display: block;
+        }
+        .link-preview .lp-content {
+            padding: 10px 12px;
+        }
+        .link-preview .lp-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .link-preview .lp-desc {
+            font-size: 13px;
+            color: #666;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .link-preview .lp-domain {
+            font-size: 11px;
+            color: #999;
+            text-transform: lowercase;
+        }
+        .link-preview .lp-loading {
+            padding: 12px;
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+        }
+        .link-preview .lp-error {
+            padding: 12px;
+            text-align: center;
+            color: #e74c3c;
+            font-size: 13px;
+        }
+
+        .message .reply-quote {
+            font-size: 13px;
+            color: #667781;
+            border-left: 3px solid #00a884;
+            padding-left: 8px;
+            margin-bottom: 4px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 4px;
+            padding: 4px 8px;
+            word-wrap: break-word;
+        }
+        .message .reply-quote .reply-sender {
+            font-weight: 600;
+            color: #00a884;
+            font-size: 12px;
+        }
+        .message .reply-quote .reply-text {
+            font-size: 13px;
+            color: #3b3b3b;
+        }
+
+        .message .sender {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            padding-left: 4px;
+            color: #4a4a4a;
+            letter-spacing: 0.2px;
+        }
+        .message.own .sender {
+            color: #0a6b4a;
+            text-align: right;
+            padding-right: 4px;
+        }
+        .message .footer {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 3px;
+            padding: 0 4px;
+        }
+        .message .time {
+            font-size: 10px;
+            color: #7a7a7a;
+        }
+        .message.own .time {
+            text-align: right;
+        }
+        .message .check {
+            font-size: 12px;
+            color: #4fc3f7;
+            line-height: 1;
+        }
+        .message.other .check {
+            display: none;
+        }
+
+        /* ----- EMPTY STATE ----- */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #7a7a7a;
+            text-align: center;
+            gap: 6px;
+        }
+        .empty-state .icon {
+            font-size: 56px;
+            opacity: 0.5;
+        }
+        .empty-state p {
+            font-size: 16px;
+            font-weight: 400;
+        }
+        .empty-state .sub {
+            font-size: 13px;
+            color: #999;
+        }
 
         /* ----- INPUT AREA ----- */
-        .input-area { padding: 8px 12px 12px; background: #f0f0f0; border-top: 1px solid #d1d1d1; flex-shrink: 0; }
-        .input-row { display: flex; gap: 6px; align-items: center; }
-        .input-row .icon-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; padding: 4px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #54656f; }
-        .input-row input[type="text"] { flex: 1; padding: 10px 14px; border: none; border-radius: 30px; background: #fff; font-size: 15px; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-        .input-row input[type="text"]:focus { box-shadow: 0 0 0 2px #00a884; }
-        .input-row input.name-input { flex: 0 0 100px; background: #f8f8f8; }
-        .input-row button.send-btn { padding: 10px 18px; border: none; border-radius: 30px; background: #00a884; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,168,132,0.3); }
-        
-        .emoji-picker-container { display: none; justify-content: flex-end; margin-top: 4px; }
-        .emoji-picker-container.show { display: flex; }
-        emoji-picker { width: 100%; max-width: 350px; height: 280px; --background: #fff; border-radius: 16px; }
+        .input-area {
+            padding: 8px 12px 12px;
+            background: #f0f0f0;
+            border-top: 1px solid #d1d1d1;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
 
-        /* ----- CALL OVERLAY ----- */
-        .call-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; color: #fff; border-radius: inherit; overflow: hidden; }
-        .call-overlay.show { display: flex; }
-        .call-video-container { position: relative; width: 100%; flex: 1; background: #000; display: flex; align-items: center; justify-content: center; }
-        .call-video-container #remoteVideo { width: 100%; height: 100%; object-fit: cover; background: #222; }
-        .call-video-container #localVideo { position: absolute; bottom: 120px; right: 20px; width: 120px; height: 160px; object-fit: cover; border-radius: 16px; border: 2px solid rgba(255,255,255,0.5); background: #333; z-index: 10; }
-        
-        .call-info { position: absolute; top: 40px; left: 0; width: 100%; text-align: center; z-index: 20; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
-        .call-info .caller-name { font-size: 22px; font-weight: 600; }
-        .call-info .call-status { font-size: 14px; opacity: 0.8; margin-top: 4px; }
-        .call-info .call-timer { font-size: 16px; font-weight: 500; margin-top: 6px; letter-spacing: 1px; }
+        .reply-indicator {
+            display: none;
+            background: #e8e8e8;
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: #1a1a1a;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+        .reply-indicator.show {
+            display: flex;
+        }
+        .reply-indicator .reply-info {
+            flex: 1;
+            overflow: hidden;
+        }
+        .reply-indicator .reply-info .reply-label {
+            font-weight: 600;
+            color: #00a884;
+            font-size: 12px;
+        }
+        .reply-indicator .reply-info .reply-preview {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            color: #3b3b3b;
+        }
+        .reply-indicator .cancel-reply {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #888;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .reply-indicator .cancel-reply:hover {
+            color: #e74c3c;
+        }
 
-        .call-controls { padding: 24px; background: rgba(0,0,0,0.6); width: 100%; display: flex; justify-content: center; gap: 20px; backdrop-filter: blur(10px); flex-shrink: 0; }
-        .call-controls button { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; transition: transform 0.15s, background 0.2s; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .call-controls button:active { transform: scale(0.9); }
-        .btn-end-call { background: #e74c3c !important; }
-        .btn-end-call:hover { background: #c0392b !important; }
-        .btn-toggle-mic { background: #444; }
-        .btn-toggle-mic.muted { background: #e67e22; }
-        .btn-toggle-video { background: #444; }
-        .btn-toggle-video.video-off { background: #e67e22; }
-        .btn-switch-cam { background: #555; } /* Tombol Switch Kamera */
-        .btn-switch-cam:hover { background: #777; }
+        .file-preview-container {
+            display: none;
+            position: relative;
+            padding: 4px 0 2px 0;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-preview-container.show {
+            display: flex;
+        }
+        .file-preview-container .preview-icon {
+            font-size: 28px;
+            width: 40px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .file-preview-container .preview-info {
+            font-size: 13px;
+            color: #555;
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .file-preview-container .preview-cancel {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #888;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .file-preview-container .preview-cancel:hover {
+            color: #e74c3c;
+        }
+        .file-preview-container .upload-progress {
+            font-size: 12px;
+            color: #00a884;
+        }
 
-        /* ----- INCOMING CALL POPUP ----- */
-        .incoming-call { position: absolute; bottom: 100px; left: 20px; right: 20px; background: #fff; color: #1a1a1a; border-radius: 20px; padding: 20px; z-index: 1500; box-shadow: 0 10px 40px rgba(0,0,0,0.4); display: none; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
-        .incoming-call.show { display: flex; }
-        .incoming-call .inc-actions { display: flex; gap: 30px; margin-top: 6px; }
-        .inc-actions button { width: 56px; height: 56px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; color: #fff; }
-        .inc-accept { background: #25d366; }
-        .inc-reject { background: #e74c3c; }
+        .input-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        .input-row .icon-btn {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+            color: #54656f;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .input-row .icon-btn:hover {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .input-row .icon-btn:active {
+            transform: scale(0.9);
+        }
+        .input-row .icon-btn.uploading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .input-row input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 30px;
+            background: #ffffff;
+            color: #1a1a1a;
+            font-size: 15px;
+            outline: none;
+            transition: box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            min-width: 0;
+            -webkit-appearance: none;
+        }
+        .input-row input[type="text"]::placeholder {
+            color: #a0a0a0;
+        }
+        .input-row input[type="text"]:focus {
+            box-shadow: 0 0 0 2px #00a884;
+        }
+        .input-row input[type="text"].name-input {
+            flex: 0 0 100px;
+            font-weight: 500;
+            background: #f8f8f8;
+        }
+        .input-row button.send-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 30px;
+            background: #00a884;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 168, 132, 0.3);
+            flex-shrink: 0;
+        }
+        .input-row button.send-btn:hover {
+            background: #008f72;
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(0, 168, 132, 0.4);
+        }
+        .input-row button.send-btn:active {
+            transform: scale(0.97);
+        }
+        .input-row button.send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
 
-        /* ----- CALL HISTORY PANEL ----- */
-        .call-history-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 3000; display: none; justify-content: flex-end; border-radius: inherit; }
-        .call-history-overlay.show { display: flex; }
-        .call-history-panel { width: 100%; max-width: 380px; height: 100%; background: #fff; box-shadow: -8px 0 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; border-radius: 0; overflow: hidden; }
-        @media (min-width: 600px) { .call-history-panel { border-radius: 28px 0 0 28px; } }
-        .call-history-header { padding: 16px 20px; background: #00a884; color: #fff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-        .call-history-header .close-history { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-        .call-history-body { flex: 1; overflow-y: auto; padding: 16px; background: #f7f7f7; }
-        .call-history-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #999; text-align: center; gap: 8px; }
-        .call-history-empty .big-icon { font-size: 48px; opacity: 0.4; }
-        .call-history-item { background: #fff; border-radius: 14px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
-        .call-history-item .ch-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .ch-icon.answered { background: #e6f7ed; color: #00a884; }
-        .ch-icon.missed { background: #fde8e8; color: #e74c3c; }
-        .ch-icon.outgoing { background: #e3f0ff; color: #2196f3; }
-        .call-history-item .ch-info { flex: 1; }
-        .call-history-item .ch-name { font-weight: 600; font-size: 15px; color: #1a1a1a; }
-        .call-history-item .ch-meta { font-size: 12px; color: #888; margin-top: 2px; }
-        .call-history-footer { padding: 12px 16px; border-top: 1px solid #eee; background: #f7f7f7; display: flex; justify-content: center; flex-shrink: 0; }
-        .clear-history-btn { background: transparent; border: none; color: #e74c3c; font-size: 13px; font-weight: 500; cursor: pointer; padding: 8px 18px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
-        .clear-history-btn:hover { background: #fde8e8; }
+        .emoji-picker-container {
+            position: relative;
+            width: 100%;
+            display: none;
+            justify-content: flex-end;
+            margin-top: 4px;
+        }
+        .emoji-picker-container.show {
+            display: flex;
+        }
+        emoji-picker {
+            width: 100%;
+            max-width: 350px;
+            height: 280px;
+            --background: #fff;
+            --border-color: #ddd;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 16px;
+        }
 
+        /* ----- CONTEXT MENU ----- */
+        .context-menu {
+            position: fixed;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            padding: 6px 0;
+            min-width: 170px;
+            z-index: 1000;
+            display: none;
+            opacity: 0;
+            transform: scale(0.92);
+            transition: opacity 0.12s, transform 0.12s;
+            overflow: hidden;
+        }
+        .context-menu.show {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+        .context-menu .menu-item {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #1a1a1a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.1s;
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+            letter-spacing: 0.2px;
+        }
+        .context-menu .menu-item:hover {
+            background: #f5f5f5;
+        }
+        .context-menu .menu-item:active {
+            background: #e8e8e8;
+        }
+        .context-menu .menu-item .icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        .context-menu .menu-item.danger {
+            color: #e74c3c;
+        }
+        .context-menu .menu-item.danger:hover {
+            background: #fde8e8;
+        }
+        .context-menu .divider {
+            height: 1px;
+            background: #e8e8e8;
+            margin: 3px 12px;
+        }
+
+        /* ================================================================
+           CALL UI (Overlay / Modal)
+           ================================================================ */
+        .call-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+        .call-overlay.show {
+            display: flex;
+        }
+        .call-overlay .call-video-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a1a;
+        }
+        .call-overlay .call-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+        .call-overlay .call-video-container #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .call-overlay .call-video-container #localVideo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 120px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: #333;
+            z-index: 10;
+            transform: scaleX(-1);
+        }
         @media (max-width: 480px) {
-            .call-overlay .call-controls button { width: 50px; height: 50px; font-size: 20px; }
-            .call-video-container #localVideo { width: 90px; height: 120px; bottom: 100px; right: 10px; }
-            .input-row input.name-input { flex: 0 0 80px; }
+            .call-overlay .call-video-container #localVideo {
+                width: 80px;
+                height: 110px;
+                bottom: 80px;
+                right: 10px;
+            }
+        }
+
+        .call-overlay .call-controls {
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            backdrop-filter: blur(10px);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .call-overlay .call-controls button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #444;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        .call-overlay .call-controls button:hover {
+            transform: scale(1.05);
+        }
+        .call-overlay .call-controls button:active {
+            transform: scale(0.9);
+        }
+        .call-overlay .call-controls .btn-end-call {
+            background: #e74c3c;
+        }
+        .call-overlay .call-controls .btn-end-call:hover {
+            background: #c0392b;
+        }
+        .call-overlay .call-controls .btn-toggle-mic {
+            background: #2d7d46;
+        }
+        .call-overlay .call-controls .btn-toggle-mic.muted {
+            background: #e67e22;
+        }
+        .call-overlay .call-controls .btn-toggle-video {
+            background: #2d7d46;
+        }
+        .call-overlay .call-controls .btn-toggle-video.video-off {
+            background: #e67e22;
+        }
+        /* Tombol flip camera - baru */
+        .call-overlay .call-controls .btn-flip-camera {
+            background: #2d7d46;
+        }
+        .call-overlay .call-controls .btn-flip-camera:hover {
+            background: #1e6b3a;
+        }
+
+        .call-overlay .call-info {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 20;
+            pointer-events: none;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+        .call-overlay .call-info .caller-name {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .call-overlay .call-info .call-status {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        /* Incoming call popup */
+        .incoming-call {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: #ffffff;
+            color: #1a1a1a;
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 1500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+            animation: slide-up 0.3s ease;
+        }
+        .incoming-call.show {
+            display: flex;
+        }
+        @keyframes slide-up {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .incoming-call .inc-caller {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .incoming-call .inc-type {
+            font-size: 14px;
+            color: #666;
+        }
+        .incoming-call .inc-actions {
+            display: flex;
+            gap: 30px;
+            margin-top: 6px;
+        }
+        .incoming-call .inc-actions button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .incoming-call .inc-actions .inc-accept {
+            background: #25d366;
+            color: #fff;
+        }
+        .incoming-call .inc-actions .inc-reject {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .incoming-call .inc-actions button:hover {
+            transform: scale(1.08);
+        }
+        .incoming-call .inc-actions button:active {
+            transform: scale(0.9);
+        }
+
+        /* ================================================================
+           CALL HISTORY PANEL (Slide-in dari kanan)
+           ================================================================ */
+        .call-history-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 3000;
+            display: none;
+            justify-content: flex-end;
+            border-radius: inherit;
+            overflow: hidden;
+        }
+        .call-history-overlay.show {
+            display: flex;
+            animation: fade-overlay 0.25s ease;
+        }
+        @keyframes fade-overlay {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .call-history-panel {
+            width: 100%;
+            max-width: 380px;
+            height: 100%;
+            background: #ffffff;
+            box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            animation: slide-panel 0.3s ease;
+            border-radius: 0;
+            overflow: hidden;
+        }
+        @media (min-width: 600px) {
+            .call-history-panel {
+                border-radius: 28px 0 0 28px;
+            }
+        }
+        @keyframes slide-panel {
+            0% {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .call-history-header {
+            padding: 16px 20px;
+            background: #00a884;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .call-history-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .call-history-header .close-history {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .call-history-header .close-history:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .call-history-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            background: #f7f7f7;
+        }
+        .call-history-body::-webkit-scrollbar {
+            width: 4px;
+        }
+        .call-history-body::-webkit-scrollbar-thumb {
+            background: #b0a89e;
+            border-radius: 8px;
+        }
+
+        .call-history-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+            gap: 8px;
+        }
+        .call-history-empty .big-icon {
+            font-size: 48px;
+            opacity: 0.4;
+        }
+        .call-history-empty p {
+            font-size: 15px;
+            font-weight: 400;
+        }
+        .call-history-empty .sub {
+            font-size: 13px;
+            color: #bbb;
+        }
+
+        .call-history-item {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.15s;
+            border: 1px solid #f0f0f0;
+        }
+        .call-history-item:hover {
+            background: #fafafa;
+        }
+
+        .call-history-item .ch-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .call-history-item .ch-icon.answered {
+            background: #e6f7ed;
+            color: #00a884;
+        }
+        .call-history-item .ch-icon.missed {
+            background: #fde8e8;
+            color: #e74c3c;
+        }
+        .call-history-item .ch-icon.outgoing {
+            background: #e3f0ff;
+            color: #2196f3;
+        }
+
+        .call-history-item .ch-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .call-history-item .ch-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .call-history-item .ch-name .ch-status-badge {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e8e8e8;
+            color: #555;
+        }
+        .call-history-item .ch-name .ch-status-badge.answered {
+            background: #d4edda;
+            color: #155724;
+        }
+        .call-history-item .ch-name .ch-status-badge.missed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .call-history-item .ch-name .ch-status-badge.outgoing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .call-history-item .ch-meta {
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+        .call-history-item .ch-meta .ch-type {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .call-history-item .ch-meta .ch-duration {
+            font-weight: 500;
+            color: #555;
+        }
+        .call-history-item .ch-meta .ch-time {
+            color: #999;
+        }
+
+        .call-history-item .ch-delete {
+            background: transparent;
+            border: none;
+            color: #ccc;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+            line-height: 1;
+            flex-shrink: 0;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .call-history-item .ch-delete:hover {
+            color: #e74c3c;
+            background: #fde8e8;
+        }
+
+        .call-history-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #eee;
+            background: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .call-history-footer .clear-history-btn {
+            background: transparent;
+            border: none;
+            color: #e74c3c;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 18px;
+            border-radius: 20px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .call-history-footer .clear-history-btn:hover {
+            background: #fde8e8;
+        }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 480px) {
+            .chat-header .info h1 {
+                font-size: 16px;
+            }
+            .chat-header .avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+            .chat-header .actions button {
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+            }
+            .chat-header .actions .menu-dots {
+                width: 34px;
+                height: 34px;
+                font-size: 18px;
+            }
+            .message .bubble {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .input-row input[type="text"].name-input {
+                flex: 0 0 80px;
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .input-row input[type="text"].msg-input {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+            .input-row .icon-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            .input-row button.send-btn {
+                padding: 8px 14px;
+                font-size: 14px;
+            }
+            emoji-picker {
+                height: 240px;
+            }
+            .context-menu {
+                min-width: 150px;
+                padding: 4px 0;
+            }
+            .context-menu .menu-item {
+                padding: 6px 14px;
+                font-size: 13px;
+                gap: 10px;
+            }
+            .context-menu .menu-item .icon {
+                font-size: 16px;
+                width: 20px;
+            }
+            .context-menu .divider {
+                margin: 2px 10px;
+            }
+            .header-dropdown {
+                right: 8px;
+                min-width: 160px;
+            }
+            .header-dropdown .drop-item {
+                padding: 8px 14px;
+                font-size: 13px;
+                gap: 10px;
+            }
+            .reply-indicator {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .reply-indicator .reply-info .reply-preview {
+                font-size: 12px;
+            }
+            .date-separator .date-label {
+                font-size: 11px;
+                padding: 3px 12px;
+            }
+            .file-preview-container .preview-icon {
+                font-size: 24px;
+                width: 34px;
+            }
+            .message .file-attachment .file-icon {
+                font-size: 24px;
+                width: 28px;
+            }
+            .message .file-attachment .file-name {
+                font-size: 13px;
+            }
+            .link-preview .lp-title {
+                font-size: 13px;
+            }
+            .link-preview .lp-desc {
+                font-size: 12px;
+            }
+            .link-preview .lp-content {
+                padding: 8px 10px;
+            }
+            .link-preview .lp-image {
+                max-height: 120px;
+            }
+            .message .bubble-image-wrapper .image-check {
+                width: 18px;
+                height: 18px;
+                font-size: 10px;
+                bottom: 4px;
+                right: 4px;
+            }
+            .call-overlay .call-controls button {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+            .call-overlay .call-controls {
+                gap: 12px;
+                padding: 12px 16px;
+            }
+            .incoming-call {
+                bottom: 80px;
+                left: 16px;
+                right: 16px;
+                padding: 16px;
+            }
+            .call-history-panel {
+                max-width: 100%;
+            }
+            .call-history-item {
+                padding: 10px 12px;
+            }
+            .call-history-item .ch-icon {
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
+            }
+            .call-history-item .ch-name {
+                font-size: 14px;
+            }
+            .call-history-item .ch-meta {
+                font-size: 11px;
+                gap: 6px;
+            }
+            .call-history-header h2 {
+                font-size: 16px;
+            }
+            .login-card {
+                padding: 30px 20px 24px;
+            }
+            .login-card h2 {
+                font-size: 20px;
+            }
+        }
+        @media (max-width: 380px) {
+            .input-row {
+                flex-wrap: wrap;
+            }
+            .input-row input[type="text"].name-input {
+                flex: 1 1 100%;
+            }
+            .input-row input[type="text"].msg-input {
+                flex: 1 1 60%;
+            }
+            .input-row button.send-btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .input-row .icon-btn {
+                flex: 0 0 36px;
+            }
+            .call-history-item .ch-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            .call-overlay .call-controls button {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="chat-container" id="appContainer">
+    <!-- ============================================================= -->
+    <!-- LOGIN OVERLAY (Full Screen)                                   -->
+    <!-- ============================================================= -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div class="login-avatar">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <h2>Ja'O Chat</h2>
+            <p class="subtitle">Masuk dengan akun terdaftar</p>
+
+            <div class="login-form">
+                <input type="email" id="loginEmail" placeholder="Email" />
+                <input type="password" id="loginPassword" placeholder="Kata Sandi" />
+                <button class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+                <div class="login-error" id="loginError"></div>
+            </div>
+
+            <div class="login-divider">atau</div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button class="login-btn" id="registerBtn" style="background:#2196f3;">
+                    <i class="fas fa-user-plus"></i> Daftar Akun Baru
+                </button>
+                <button class="login-btn" id="guestLoginBtn" style="background:#6c757d;">
+                    <i class="fas fa-user"></i> Masuk sebagai Tamu
+                </button>
+            </div>
+
+            <div style="margin-top:12px;text-align:center;font-size:13px;color:#888;">
+                <span id="authModeText">Belum punya akun? Daftar sekarang!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- CHAT CONTAINER                                                -->
+    <!-- ============================================================= -->
+    <div class="chat-container" id="appContainer" style="display:none;">
 
         <!-- HEADER -->
         <div class="chat-header">
             <div class="avatar"><i class="fas fa-comment-dots"></i></div>
             <div class="info">
-                <h1>Ja'O Chat</h1>
+                <h1 id="chatTitle">Ja'O Chat</h1>
                 <div class="status"><span>Online</span></div>
             </div>
             <div class="actions">
@@ -158,34 +1717,68 @@
                 <span class="menu-dots" id="headerMenuBtn"><i class="fas fa-ellipsis-v"></i></span>
             </div>
             <div class="header-dropdown" id="headerDropdown">
-                <button class="drop-item danger" id="clearAllChat"><span class="icon"><i class="fas fa-trash-alt"></i></span> Hapus Semua Chat</button>
+                <button class="drop-item danger" id="clearAllChat">
+                    <span class="icon"><i class="fas fa-trash-alt"></i></span> Hapus Semua Chat
+                </button>
                 <div class="divider"></div>
-                <button class="drop-item danger" id="clearAllHistory"><span class="icon"><i class="fas fa-broom"></i></span> Hapus Riwayat Panggilan</button>
+                <button class="drop-item danger" id="clearAllHistory">
+                    <span class="icon"><i class="fas fa-broom"></i></span> Hapus Riwayat Panggilan
+                </button>
+                <div class="divider"></div>
+                <button class="drop-item logout" id="logoutBtn">
+                    <span class="icon"><i class="fas fa-sign-out-alt"></i></span> Keluar
+                </button>
             </div>
         </div>
 
         <!-- MESSAGES -->
-        <div class="messages-wrapper" id="messageContainer"></div>
+        <div class="messages-wrapper" id="messageContainer">
+            <div class="empty-state" id="emptyState">
+                <div class="icon"><i class="fas fa-dove"></i></div>
+                <p>Belum ada pesan</p>
+                <div class="sub">Mulai ngobrol!</div>
+            </div>
+        </div>
 
         <!-- INPUT AREA -->
         <div class="input-area">
+            <div class="reply-indicator" id="replyIndicator">
+                <div class="reply-info">
+                    <div class="reply-label"><i class="fas fa-reply"></i> Balas ke <span id="replySender"></span></div>
+                    <div class="reply-preview" id="replyPreview"></div>
+                </div>
+                <button class="cancel-reply" id="cancelReplyBtn"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="file-preview-container" id="filePreviewContainer">
+                <span class="preview-icon" id="filePreviewIcon"><i class="fas fa-image"></i></span>
+                <span class="preview-info" id="filePreviewInfo">Gambar</span>
+                <span class="upload-progress" id="uploadProgress"></span>
+                <button class="preview-cancel" id="cancelFileBtn"><i class="fas fa-times"></i></button>
+            </div>
+
             <div class="input-row">
-                <input type="text" class="name-input" id="nameInput" placeholder="Nama" maxlength="20" value="User" />
+                <input type="text" class="name-input" id="nameInput" placeholder="Nama" maxlength="20" value="User" readonly />
                 <input type="text" class="msg-input" id="messageInput" placeholder="Ketik pesan..." maxlength="500" autocomplete="off" />
+                <button class="icon-btn" id="attachBtn" title="Kirim Gambar"><i class="fas fa-image"></i></button>
                 <button class="icon-btn" id="emojiToggle" type="button" aria-label="Emoji"><i class="far fa-smile"></i></button>
-                <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                <button class="send-btn" id="sendBtn">
+                    <span>Kirim</span>
+                    <span style="font-size:16px;"><i class="fas fa-paper-plane"></i></span>
+                </button>
             </div>
             <div class="emoji-picker-container" id="emojiPickerContainer">
                 <emoji-picker id="emojiPicker"></emoji-picker>
             </div>
         </div>
 
-        <!-- CALL OVERLAY -->
+        <!-- ============================================================= -->
+        <!-- CALL OVERLAY (Tampilan saat sedang telepon/video call)        -->
+        <!-- ============================================================= -->
         <div class="call-overlay" id="callOverlay">
             <div class="call-info">
                 <div class="caller-name" id="callerNameDisplay">Memanggil...</div>
                 <div class="call-status" id="callStatusDisplay">Menghubungkan...</div>
-                <div class="call-timer" id="callTimerDisplay">00:00</div>
             </div>
             <div class="call-video-container">
                 <video id="remoteVideo" autoplay playsinline></video>
@@ -194,13 +1787,14 @@
             <div class="call-controls">
                 <button class="btn-toggle-mic" id="toggleMicBtn" title="Mute/Unmute Mic"><i class="fas fa-microphone"></i></button>
                 <button class="btn-toggle-video" id="toggleVideoBtn" title="Matikan/Hidupkan Kamera"><i class="fas fa-video"></i></button>
-                <!-- TOMBOL ROTASI KAMERA -->
-                <button class="btn-switch-cam" id="switchCamBtn" title="Ganti Kamera"><i class="fas fa-sync-alt"></i></button>
+                <button class="btn-flip-camera" id="flipCameraBtn" title="Ganti Kamera"><i class="fas fa-sync-alt"></i></button>
                 <button class="btn-end-call" id="endCallBtn"><i class="fas fa-phone-slash"></i></button>
             </div>
         </div>
 
-        <!-- INCOMING CALL POPUP -->
+        <!-- ============================================================= -->
+        <!-- INCOMING CALL POPUP (Notifikasi panggilan masuk)              -->
+        <!-- ============================================================= -->
         <div class="incoming-call" id="incomingCallPopup">
             <div class="inc-caller" id="incCallerName">User</div>
             <div class="inc-type" id="incCallType"><i class="fas fa-video"></i> Panggilan Video</div>
@@ -210,446 +1804,2383 @@
             </div>
         </div>
 
-        <!-- CALL HISTORY PANEL -->
+        <!-- ============================================================= -->
+        <!-- CALL HISTORY PANEL (Slide-in dari kanan)                      -->
+        <!-- ============================================================= -->
         <div class="call-history-overlay" id="callHistoryOverlay">
             <div class="call-history-panel">
                 <div class="call-history-header">
-                    <h2><i class="fas fa-history"></i> Riwayat</h2>
+                    <h2><i class="fas fa-history"></i> Riwayat Panggilan</h2>
                     <button class="close-history" id="closeHistoryBtn"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="call-history-body" id="callHistoryBody">
-                    <div class="call-history-empty" id="callHistoryEmpty">
-                        <div class="big-icon"><i class="fas fa-phone-slash"></i></div>
-                        <p>Belum ada riwayat</p>
-                        <div class="sub">Panggilan akan muncul di sini</div>
+                    <div class="call-history-empty" id="historyEmpty">
+                        <div class="big-icon"><i class="fas fa-inbox"></i></div>
+                        <p>Belum ada riwayat panggilan</p>
+                        <div class="sub">Panggilan akan tercatat di sini</div>
                     </div>
                 </div>
                 <div class="call-history-footer">
-                    <button class="clear-history-btn" id="clearHistoryBtn"><i class="fas fa-trash"></i> Hapus Semua Riwayat</button>
+                    <button class="clear-history-btn" id="clearHistoryBtn"><i class="fas fa-broom"></i> Hapus Semua</button>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- JAVASCRIPT -->
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <button class="menu-item" id="menuReply">
+            <span class="icon"><i class="fas fa-reply"></i></span> Balas
+        </button>
+        <button class="menu-item" id="menuForward">
+            <span class="icon"><i class="fas fa-share"></i></span> Teruskan
+        </button>
+        <div class="divider"></div>
+        <button class="menu-item danger" id="menuDelete">
+            <span class="icon"><i class="fas fa-trash-alt"></i></span> Hapus
+        </button>
+        <button class="menu-item danger" id="menuUnsend">
+            <span class="icon"><i class="fas fa-times-circle"></i></span> Batalkan
+        </button>
+    </div>
+
+    <!-- hidden file input - khusus gambar -->
+    <input type="file" id="fileInput" accept="image/*" style="display:none" />
+
     <script>
-        // ========================================================
-        // FIREBASE CONFIG (Ganti dengan konfigurasi Firebase Anda)
-        // ========================================================
+        // ============================================================
+        // 0. FIREBASE CONFIG
+        // ============================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyD1234567890-EXAMPLE_KEY",
-            authDomain: "your-project.firebaseapp.com",
-            databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-            projectId: "your-project",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789012",
-            appId: "1:123456789012:web:abcdef123456"
-        };
-        
-        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // ========================================================
-        // VARIABEL GLOBAL
-        // ========================================================
-        let myName = localStorage.getItem('jao_name') || 'User' + Math.floor(Math.random()*100);
-        document.getElementById('nameInput').value = myName;
-
-        let localStream = null;
-        let peerConnection = null;
-        let currentCallRef = null;
-        let currentFacingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
-        let isMuted = false;
-        let isVideoOff = false;
-        let callTimerInterval = null;
-        let callStartTime = null;
-
-        const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-        // ========================================================
-        // UI INTERACTIONS
-        // ========================================================
-        // Header Dropdown
-        document.getElementById('headerMenuBtn').onclick = () => document.getElementById('headerDropdown').classList.toggle('show');
-        window.onclick = (e) => { if(!e.target.closest('#headerMenuBtn')) document.getElementById('headerDropdown').classList.remove('show'); };
-
-        // Emoji Picker
-        document.getElementById('emojiToggle').onclick = () => document.getElementById('emojiPickerContainer').classList.toggle('show');
-        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
-            document.getElementById('messageInput').value += event.detail.unicode;
-            document.getElementById('messageInput').focus();
-        });
-
-        // Call History Panel
-        document.getElementById('historyCallBtn').onclick = () => { document.getElementById('callHistoryOverlay').classList.add('show'); loadCallHistory(); };
-        document.getElementById('closeHistoryBtn').onclick = () => document.getElementById('callHistoryOverlay').classList.remove('show');
-
-        // Save name on change
-        document.getElementById('nameInput').addEventListener('keyup', (e) => {
-            myName = e.target.value.trim() || 'Anonim';
-            localStorage.setItem('jao_name', myName);
-        });
-
-        // ========================================================
-        // CHAT LOGIC
-        // ========================================================
-        const msgContainer = document.getElementById('messageContainer');
-        
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('messageInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') sendMessage(); });
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-            if(!text) return;
-
-            const msgData = {
-                sender: myName,
-                text: text,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-            db.ref('messages').push(msgData);
-            input.value = '';
-        }
-
-        db.ref('messages').on('child_added', (snapshot) => {
-            const data = snapshot.val();
-            renderMessage(data);
-            msgContainer.scrollTop = msgContainer.scrollHeight;
-        });
-
-        function renderMessage(data) {
-            const isOwn = data.sender === myName;
-            const div = document.createElement('div');
-            div.className = `message ${isOwn ? 'own' : 'other'}`;
-            
-            const time = new Date(data.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-            div.innerHTML = `
-                <div class="sender">${data.sender}</div>
-                <div class="bubble">${data.text}</div>
-                <div class="footer"><span class="time">${time}</span></div>
-            `;
-            msgContainer.appendChild(div);
-        }
-
-        // Clear Chat
-        document.getElementById('clearAllChat').onclick = () => {
-            if(confirm('Hapus semua chat?')) db.ref('messages').remove();
-            msgContainer.innerHTML = '';
-            document.getElementById('headerDropdown').classList.remove('show');
+            apiKey: "AIzaSyDXAGqwKYZ0_CIqM_X4aqaQv1hZ0FL1_g0",
+            authDomain: "aplikasi1-81ca7.firebaseapp.com",
+            databaseURL: "https://aplikasi1-81ca7-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "aplikasi1-81ca7",
+            storageBucket: "aplikasi1-81ca7.firebasestorage.app",
+            appId: "1:918066359695:web:31dddf1decc224e984affa"
         };
 
-        // ========================================================
-        // CALL LOGIC (WebRTC + Firebase Signaling)
-        // ========================================================
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        const messagesRef = database.ref('messages');
+        const callsRef = database.ref('calls');
+        const callHistoryRef = database.ref('callHistory');
+        const usersRef = database.ref('users');
+
+        // ============================================================
+        // 1. GOFILE API TOKEN
+        // ============================================================
+        const GOFILE_API_TOKEN = 'YOUR_API_TOKEN';
+
+        // ============================================================
+        // 2. WEBRTC CONFIG
+        // ============================================================
+        const rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
+        // ============================================================
+        // 3. DOM ELEMENTS
+        // ============================================================
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const guestLoginBtn = document.getElementById('guestLoginBtn');
+        const loginError = document.getElementById('loginError');
+        const authModeText = document.getElementById('authModeText');
+
+        const appContainer = document.getElementById('appContainer');
+        const container = document.getElementById('messageContainer');
+        const emptyState = document.getElementById('emptyState');
+        const nameInput = document.getElementById('nameInput');
+        const chatTitle = document.getElementById('chatTitle');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const emojiToggle = document.getElementById('emojiToggle');
+        const emojiPickerContainer = document.getElementById('emojiPickerContainer');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const contextMenu = document.getElementById('contextMenu');
+        const menuReply = document.getElementById('menuReply');
+        const menuForward = document.getElementById('menuForward');
+        const menuDelete = document.getElementById('menuDelete');
+        const menuUnsend = document.getElementById('menuUnsend');
+        const headerMenuBtn = document.getElementById('headerMenuBtn');
+        const headerDropdown = document.getElementById('headerDropdown');
+        const clearAllChat = document.getElementById('clearAllChat');
+        const clearAllHistory = document.getElementById('clearAllHistory');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const replyIndicator = document.getElementById('replyIndicator');
+        const replySender = document.getElementById('replySender');
+        const replyPreview = document.getElementById('replyPreview');
+        const cancelReplyBtn = document.getElementById('cancelReplyBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const filePreviewContainer = document.getElementById('filePreviewContainer');
+        const filePreviewIcon = document.getElementById('filePreviewIcon');
+        const filePreviewInfo = document.getElementById('filePreviewInfo');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const cancelFileBtn = document.getElementById('cancelFileBtn');
+
+        // Call DOM
         const callOverlay = document.getElementById('callOverlay');
         const localVideo = document.getElementById('localVideo');
         const remoteVideo = document.getElementById('remoteVideo');
+        const callerNameDisplay = document.getElementById('callerNameDisplay');
+        const callStatusDisplay = document.getElementById('callStatusDisplay');
+        const toggleMicBtn = document.getElementById('toggleMicBtn');
+        const toggleVideoBtn = document.getElementById('toggleVideoBtn');
+        const flipCameraBtn = document.getElementById('flipCameraBtn');
+        const endCallBtn = document.getElementById('endCallBtn');
+        const voiceCallBtn = document.getElementById('voiceCallBtn');
+        const videoCallBtn = document.getElementById('videoCallBtn');
+        const incomingCallPopup = document.getElementById('incomingCallPopup');
+        const incCallerName = document.getElementById('incCallerName');
+        const incCallType = document.getElementById('incCallType');
+        const incAcceptBtn = document.getElementById('incAcceptBtn');
+        const incRejectBtn = document.getElementById('incRejectBtn');
 
-        // Memulai Video Call
-        document.getElementById('videoCallBtn').onclick = () => startCall(true);
-        document.getElementById('voiceCallBtn').onclick = () => startCall(false);
+        // Call History DOM
+        const callHistoryOverlay = document.getElementById('callHistoryOverlay');
+        const callHistoryBody = document.getElementById('callHistoryBody');
+        const historyEmpty = document.getElementById('historyEmpty');
+        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+        const historyCallBtn = document.getElementById('historyCallBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-        async function startCall(isVideo) {
+        // ============================================================
+        // 4. AUTH STATE
+        // ============================================================
+        let currentUser = null;
+        let isGuest = false;
+
+        function isLoggedIn() {
+            return currentUser !== null;
+        }
+
+        // ============================================================
+        // 5. AUTH FUNCTIONS
+        // ============================================================
+
+        async function registerUser(email, password) {
             try {
-                currentFacingMode = 'user'; // Selalu mulai dari kamera depan
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    video: isVideo ? { facingMode: currentFacingMode } : false,
-                    audio: true
+                const cred = await auth.createUserWithEmailAndPassword(email, password);
+                await usersRef.child(cred.user.uid).set({
+                    name: email.split('@')[0],
+                    email: email,
+                    createdAt: Date.now(),
+                    isGuest: false
                 });
-                
-                localVideo.srcObject = localStream;
-                localVideo.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
-                
-                showCallUI(myName, isVideo ? 'Panggilan Video...' : 'Panggilan Suara...');
-                
-                const callId = 'call_' + Date.now();
-                currentCallRef = db.ref('calls/' + callId);
-                
-                await currentCallRef.set({ caller: myName, type: isVideo ? 'video' : 'voice', status: 'ringing' });
-                
-                createPeerConnection();
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                
-                db.ref('signaling/' + callId + '/offer').set(offer);
-                
-                // Listen for answer
-                db.ref('signaling/' + callId + '/answer').on('value', async (snapshot) => {
-                    if(snapshot.val() && !peerConnection.currentRemoteDescription) {
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(snapshot.val()));
-                        callStartTime = Date.now();
-                        startCallTimer();
-                        updateCallStatus('Terhubung');
-                    }
-                });
-
-                // Listen for ICE candidates from remote
-                db.ref('signaling/' + callId + '/callerCandidates').on('child_added', async (snapshot) => {
-                    if(snapshot.val()) {
-                        try { await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val())); } catch(e) {}
-                    }
-                });
-
-            } catch(err) {
-                alert('Gagal mengakses kamera/mikrofon: ' + err.message);
-                endCall();
+                return cred.user;
+            } catch (error) {
+                throw error;
             }
         }
 
-        // Listen for incoming calls
-        db.ref('calls').orderByChild('status').equalTo('ringing').limitToLast(1).on('child_added', async (snapshot) => {
-            const callData = snapshot.val();
-            if(callData.caller !== myName) {
-                const callId = snapshot.key;
-                currentCallRef = db.ref('calls/' + callId);
-                
-                document.getElementById('incCallerName').innerText = callData.caller;
-                document.getElementById('incCallType').innerHTML = callData.type === 'video' ? '<i class="fas fa-video"></i> Panggilan Video' : '<i class="fas fa-phone"></i> Panggilan Suara';
-                document.getElementById('incomingCallPopup').classList.add('show');
+        async function loginUser(email, password) {
+            try {
+                const cred = await auth.signInWithEmailAndPassword(email, password);
+                return cred.user;
+            } catch (error) {
+                throw error;
+            }
+        }
 
-                // Accept
-                document.getElementById('incAcceptBtn').onclick = async () => {
-                    document.getElementById('incomingCallPopup').classList.remove('show');
-                    try {
-                        currentFacingMode = 'user';
-                        localStream = await navigator.mediaDevices.getUserMedia({
-                            video: callData.type === 'video' ? { facingMode: currentFacingMode } : false,
-                            audio: true
-                        });
-                        localVideo.srcObject = localStream;
-                        localVideo.style.transform = 'scaleX(-1)';
-                        
-                        showCallUI(callData.caller, 'Menghubungkan...');
+        async function guestLogin() {
+            try {
+                const cred = await auth.signInAnonymously();
+                await usersRef.child(cred.user.uid).set({
+                    name: 'Tamu_' + Math.random().toString(36).substring(2, 6),
+                    email: 'guest@anonymous.com',
+                    createdAt: Date.now(),
+                    isGuest: true
+                });
+                return cred.user;
+            } catch (error) {
+                throw error;
+            }
+        }
 
-                        createPeerConnection();
-                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        async function logout() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
 
-                        // Get offer
-                        const offerSnap = await db.ref('signaling/' + callId + '/offer').once('value');
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(offerSnap.val()));
+        // ============================================================
+        // 6. COMPRESS IMAGE (untuk mobile)
+        // ============================================================
+        function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let width = img.width;
+                        let height = img.height;
 
-                        const answer = await peerConnection.createAnswer();
-                        await peerConnection.setLocalDescription(answer);
-                        db.ref('signaling/' + callId + '/answer').set(answer);
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width = (width * maxHeight) / height;
+                            height = maxHeight;
+                        }
 
-                        // Save own ICE candidates
-                        peerConnection.onicecandidate = (event) => {
-                            if(event.candidate) db.ref('signaling/' + callId + '/callerCandidates').push(event.candidate.toJSON());
-                        };
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
 
-                        // Listen for remote candidates
-                        db.ref('signaling/' + callId + '/calleeCandidates').on('child_added', async (snapshot) => {
-                            if(snapshot.val()) {
-                                try { await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val())); } catch(e) {}
+                        canvas.toBlob(function(blob) {
+                            if (blob) {
+                                const compressedFile = new File([blob], file.name, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                reject(new Error('Gagal mengompres gambar'));
                             }
-                        });
-
-                        await currentCallRef.update({ status: 'answered' });
-                        callStartTime = Date.now();
-                        startCallTimer();
-                        updateCallStatus('Terhubung');
-
-                    } catch(err) {
-                        alert('Gagal menerima panggilan: ' + err.message);
-                        endCall();
-                    }
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = function() {
+                        reject(new Error('Gagal memuat gambar'));
+                    };
+                    img.src = e.target.result;
                 };
-
-                // Reject
-                document.getElementById('incRejectBtn').onclick = () => {
-                    document.getElementById('incomingCallPopup').classList.remove('show');
-                    currentCallRef.update({ status: 'rejected' });
+                reader.onerror = function() {
+                    reject(new Error('Gagal membaca file'));
                 };
-            }
-        });
-
-        function createPeerConnection() {
-            peerConnection = new RTCPeerConnection(ICE_SERVERS);
-            
-            peerConnection.ontrack = (event) => {
-                remoteVideo.srcObject = event.streams[0];
-            };
-
-            peerConnection.onicecandidate = (event) => {
-                if(event.candidate && currentCallRef) {
-                    const callId = currentCallRef.key;
-                    db.ref('signaling/' + callId + '/calleeCandidates').push(event.candidate.toJSON());
-                }
-            };
-
-            peerConnection.oniceconnectionstatechange = () => {
-                if(peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-                    endCall();
-                }
-            };
-        }
-
-        // ==============================================
-        // FITUR ROTASI KAMERA (SWITCH CAMERA)
-        // ==============================================
-        document.getElementById('switchCamBtn').onclick = switchCamera;
-
-        async function switchCamera() {
-            if(!localStream) return;
-
-            // Cek apakah device punya lebih dari 1 kamera
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            if (videoDevices.length <= 1) {
-                alert("Perangkat ini hanya memiliki satu kamera.");
-                return;
-            }
-
-            // Toggle mode
-            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-
-            // Ambil track video lama
-            const oldVideoTrack = localStream.getVideoTracks()[0];
-            
-            try {
-                // Request stream baru dengan facingMode yang baru
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentFacingMode },
-                    audio: false // Mikrofon tetap pakai yang lama
-                });
-
-                const newVideoTrack = newStream.getVideoTracks()[0];
-
-                // 1. Replace track di Peer Connection agar lawan bicara melihat perubahan
-                if (peerConnection) {
-                    const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                    if (sender) await sender.replaceTrack(newVideoTrack);
-                }
-
-                // 2. Hentikan kamera lama & update localStream
-                oldVideoTrack.stop();
-                localStream.removeTrack(oldVideoTrack);
-                localStream.addTrack(newVideoTrack);
-
-                // 3. Update tampilan video lokal & efek cermin
-                localVideo.srcObject = localStream;
-                localVideo.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
-
-            } catch(err) {
-                console.error("Gagal switch kamera:", err);
-                alert("Gagal mengganti kamera.");
-                currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'; // Kembalikan state jika gagal
-            }
-        }
-
-        // End Call
-        document.getElementById('endCallBtn').onclick = endCall;
-
-        function endCall() {
-            if(localStream) localStream.getTracks().forEach(track => track.stop());
-            if(peerConnection) peerConnection.close();
-            if(currentCallRef) currentCallRef.update({ status: 'ended' });
-            
-            peerConnection = null;
-            localStream = null;
-            localVideo.srcObject = null;
-            remoteVideo.srcObject = null;
-            
-            callOverlay.classList.remove('show');
-            document.getElementById('incomingCallPopup').classList.remove('show');
-            
-            clearInterval(callTimerInterval);
-            
-            // Save to history
-            if(callStartTime) {
-                const duration = Math.floor((Date.now() - callStartTime) / 1000);
-                saveCallHistory('answered', duration);
-            }
-            callStartTime = null;
-        }
-
-        function showCallUI(name, status) {
-            document.getElementById('callerNameDisplay').innerText = name;
-            updateCallStatus(status);
-            callOverlay.classList.add('show');
-            document.getElementById('emojiPickerContainer').classList.remove('show');
-        }
-
-        function updateCallStatus(status) { document.getElementById('callStatusDisplay').innerText = status; }
-
-        function startCallTimer() {
-            clearInterval(callTimerInterval);
-            callTimerInterval = setInterval(() => {
-                const seconds = Math.floor((Date.now() - callStartTime) / 1000);
-                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const s = (seconds % 60).toString().padStart(2, '0');
-                document.getElementById('callTimerDisplay').innerText = `${m}:${s}`;
-            }, 1000);
-        }
-
-        // Toggle Mic & Video
-        document.getElementById('toggleMicBtn').onclick = () => {
-            isMuted = !isMuted;
-            localStream.getAudioTracks()[0].enabled = !isMuted;
-            const btn = document.getElementById('toggleMicBtn');
-            btn.classList.toggle('muted', isMuted);
-            btn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-        };
-
-        document.getElementById('toggleVideoBtn').onclick = () => {
-            isVideoOff = !isVideoOff;
-            localStream.getVideoTracks()[0].enabled = !isVideoOff;
-            const btn = document.getElementById('toggleVideoBtn');
-            btn.classList.toggle('video-off', isVideoOff);
-            btn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
-        };
-
-        // ========================================================
-        // CALL HISTORY LOGIC
-        // ========================================================
-        function saveCallHistory(status, duration) {
-            const historyData = {
-                name: document.getElementById('callerNameDisplay').innerText || myName,
-                type: localStream && localStream.getVideoTracks().length > 0 ? 'video' : 'voice',
-                status: status,
-                duration: duration,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-            db.ref('callHistory').push(historyData);
-        }
-
-        function loadCallHistory() {
-            const body = document.getElementById('callHistoryBody');
-            db.ref('callHistory').orderByChild('timestamp').once('value', (snapshot) => {
-                let html = '';
-                snapshot.forEach(child => {
-                    const data = child.val();
-                    const time = new Date(data.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-                    const m = Math.floor(data.duration / 60).toString().padStart(2,'0');
-                    const s = (data.duration % 60).toString().padStart(2,'0');
-                    
-                    let iconClass = data.status === 'missed' ? 'missed' : (data.status === 'answered' ? 'answered' : 'outgoing');
-                    let iconName = data.type === 'video' ? 'fa-video' : 'fa-phone';
-                    
-                    html += `
-                        <div class="call-history-item">
-                            <div class="ch-icon ${iconClass}"><i class="fas ${iconName}"></i></div>
-                            <div class="ch-info">
-                                <div class="ch-name">${data.name}</div>
-                                <div class="ch-meta">${time} • ${m}:${s}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                body.innerHTML = html || `<div class="call-history-empty"><div class="big-icon"><i class="fas fa-phone-slash"></i></div><p>Belum ada riwayat</p></div>`;
+                reader.readAsDataURL(file);
             });
         }
 
-        document.getElementById('clearAllHistory').onclick = () => {
-            if(confirm('Hapus riwayat panggilan?')) db.ref('callHistory').remove();
-            document.getElementById('callHistoryBody').innerHTML = `<div class="call-history-empty"><div class="big-icon"><i class="fas fa-phone-slash"></i></div><p>Belum ada riwayat</p></div>`;
-            document.getElementById('headerDropdown').classList.remove('show');
-        };
+        // ============================================================
+        // 7. UPLOAD IMAGE (Chat)
+        // ============================================================
+        const IMGUR_CLIENT_ID = '546c25a59c58ad7';
+
+        async function uploadToImgur(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            const response = await fetch('https://api.imgur.com/3/image', {
+                method: 'POST',
+                headers: { 'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID },
+                body: formData
+            });
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error('Imgur error: ' + err);
+            }
+            const data = await response.json();
+            if (!data.success || !data.data || !data.data.link) {
+                throw new Error('Imgur response invalid');
+            }
+            return data.data.link;
+        }
+
+        async function uploadToGoFile(file) {
+            const token = GOFILE_API_TOKEN;
+            if (!token || token === 'YOUR_API_TOKEN') {
+                throw new Error('GoFile API Token belum diatur.');
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const response = await fetch('https://upload.gofile.io/uploadfile', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error('Upload gagal (HTTP ' + response.status + '): ' + errText);
+                }
+                const result = await response.json();
+                if (!result.status || result.status !== 'ok') {
+                    throw new Error('Upload gagal: ' + JSON.stringify(result));
+                }
+                const data = result.data;
+                const downloadUrl = data.link || data.downloadUrl || `https://gofile.io/d/${data.fileId}`;
+                return downloadUrl;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // ============================================================
+        // 8. AUTH UI FUNCTIONS
+        // ============================================================
+
+        function showLoginScreen() {
+            loginOverlay.classList.remove('hidden');
+            appContainer.style.display = 'none';
+            loginError.textContent = '';
+            loginEmail.value = '';
+            loginPassword.value = '';
+            loginBtn.textContent = 'Masuk';
+            registerBtn.style.display = 'block';
+            authModeText.textContent = 'Belum punya akun? Daftar sekarang!';
+        }
+
+        function hideLoginScreen() {
+            loginOverlay.classList.add('hidden');
+            appContainer.style.display = 'flex';
+        }
+
+        function updateChatUI(user) {
+            if (user) {
+                const displayName = user.displayName || (user.isGuest ? 'Tamu' : user.email.split('@')[0]);
+                nameInput.value = displayName;
+                chatTitle.textContent = 'Ja\'O Chat - ' + displayName;
+                if (user.displayName) {
+                    nameInput.value = user.displayName;
+                }
+            }
+        }
+
+        function showError(msg) {
+            loginError.textContent = msg;
+            setTimeout(() => { loginError.textContent = ''; }, 5000);
+        }
+
+        // ============================================================
+        // 9. AUTH EVENT LISTENERS
+        // ============================================================
+
+        loginBtn.addEventListener('click', async () => {
+            const email = loginEmail.value.trim();
+            const password = loginPassword.value.trim();
+
+            if (!email || !password) {
+                showError('Isi email dan kata sandi.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                const user = await loginUser(email, password);
+                currentUser = user;
+                isGuest = false;
+                hideLoginScreen();
+                updateChatUI(user);
+                loadUserData(user.uid);
+                loadMessages();
+                listenForIncomingCalls();
+                if (callHistoryOverlay.classList.contains('show')) {
+                    renderCallHistory();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                if (error.code === 'auth/user-not-found') {
+                    showError('Email tidak terdaftar. Silakan daftar terlebih dahulu.');
+                } else if (error.code === 'auth/wrong-password') {
+                    showError('Kata sandi salah.');
+                } else if (error.code === 'auth/invalid-email') {
+                    showError('Format email tidak valid.');
+                } else {
+                    showError('Gagal masuk: ' + error.message);
+                }
+            }
+
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Masuk';
+        });
+
+        registerBtn.addEventListener('click', async () => {
+            const email = loginEmail.value.trim();
+            const password = loginPassword.value.trim();
+
+            if (!email || !password) {
+                showError('Isi email dan kata sandi untuk daftar.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Kata sandi minimal 6 karakter.');
+                return;
+            }
+
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mendaftar...';
+
+            try {
+                const user = await registerUser(email, password);
+                currentUser = user;
+                isGuest = false;
+                hideLoginScreen();
+                updateChatUI(user);
+                loadUserData(user.uid);
+                loadMessages();
+                listenForIncomingCalls();
+                if (callHistoryOverlay.classList.contains('show')) {
+                    renderCallHistory();
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                if (error.code === 'auth/email-already-in-use') {
+                    showError('Email sudah terdaftar. Silakan masuk.');
+                } else if (error.code === 'auth/invalid-email') {
+                    showError('Format email tidak valid.');
+                } else if (error.code === 'auth/weak-password') {
+                    showError('Kata sandi terlalu lemah. Minimal 6 karakter.');
+                } else {
+                    showError('Gagal daftar: ' + error.message);
+                }
+            }
+
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Daftar Akun Baru';
+        });
+
+        guestLoginBtn.addEventListener('click', async () => {
+            guestLoginBtn.disabled = true;
+            guestLoginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                const user = await guestLogin();
+                currentUser = user;
+                isGuest = true;
+                hideLoginScreen();
+                const guestName = 'Tamu_' + Math.random().toString(36).substring(2, 6);
+                await user.updateProfile({ displayName: guestName });
+                updateChatUI(user);
+                loadUserData(user.uid);
+                loadMessages();
+                listenForIncomingCalls();
+                if (callHistoryOverlay.classList.contains('show')) {
+                    renderCallHistory();
+                }
+            } catch (error) {
+                console.error('Guest login error:', error);
+                showError('Gagal masuk sebagai tamu: ' + error.message);
+            }
+
+            guestLoginBtn.disabled = false;
+            guestLoginBtn.innerHTML = '<i class="fas fa-user"></i> Masuk sebagai Tamu';
+        });
+
+        loginEmail.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') loginPassword.focus();
+        });
+        loginPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') loginBtn.click();
+        });
+
+        // ============================================================
+        // 10. FIREBASE AUTH STATE OBSERVER
+        // ============================================================
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userData = await usersRef.child(user.uid).once('value');
+                const data = userData.val();
+                if (data && data.isGuest) {
+                    isGuest = true;
+                } else {
+                    isGuest = false;
+                }
+                if (!user.displayName && user.isAnonymous) {
+                    const guestName = 'Tamu_' + Math.random().toString(36).substring(2, 6);
+                    await user.updateProfile({ displayName: guestName });
+                }
+                hideLoginScreen();
+                updateChatUI(user);
+                loadUserData(user.uid);
+                loadMessages();
+                listenForIncomingCalls();
+                if (callHistoryOverlay.classList.contains('show')) {
+                    renderCallHistory();
+                }
+            } else {
+                currentUser = null;
+                isGuest = false;
+                container.innerHTML = '';
+                document.querySelectorAll('.date-separator').forEach(el => el.remove());
+                lastDisplayedDateKey = null;
+                notifiedKeys.clear();
+                updateEmptyState();
+                showLoginScreen();
+                headerDropdown.classList.remove('show');
+                closeCallHistory();
+                if (currentCallId) {
+                    endCallAndSaveHistory();
+                    hideCallOverlay();
+                }
+                messagesRef.off();
+                callsRef.off();
+            }
+        });
+
+        // ============================================================
+        // 11. LOAD USER DATA
+        // ============================================================
+
+        function loadUserData(uid) {
+            usersRef.child(uid).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.name) {
+                    if (!currentUser.displayName && !isGuest) {
+                        currentUser.updateProfile({ displayName: data.name }).catch(() => {});
+                    }
+                    nameInput.value = data.name;
+                    chatTitle.textContent = 'Ja\'O Chat - ' + data.name;
+                }
+            });
+        }
+
+        // ============================================================
+        // 12. VARIABEL CALL
+        // ============================================================
+        let localStream = null;
+        let remoteStream = null;
+        let peerConnection = null;
+        let currentCallId = null;
+        let isCaller = false;
+        let isVideoCall = false;
+        let isMuted = false;
+        let isVideoOff = false;
+        let incomingCallId = null;
+        // Untuk flip camera
+        let currentFacingMode = 'user'; // 'user' atau 'environment'
+
+        // ============================================================
+        // 13. CALL HISTORY TRACKING
+        // ============================================================
+        let activeCallRecord = null;
+        let callStartTime = 0;
+        let callConnectedTime = 0;
+
+        // ============================================================
+        // 14. SUARA
+        // ============================================================
+        let audioCtx = null;
+        let ringtoneNodes = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new(window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+        }
+
+        function playBirdSound() {
+            if (!isLoggedIn()) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const now = audioCtx.currentTime;
+                const notes = [
+                    { freq: 1200, dur: 0.06, start: 0.00 },
+                    { freq: 1800, dur: 0.05, start: 0.08 },
+                    { freq: 1400, dur: 0.07, start: 0.15 },
+                    { freq: 2000, dur: 0.05, start: 0.24 },
+                    { freq: 1600, dur: 0.06, start: 0.32 },
+                    { freq: 2200, dur: 0.04, start: 0.40 },
+                    { freq: 1300, dur: 0.08, start: 0.48 }
+                ];
+                notes.forEach(note => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(note.freq, now + note.start);
+                    gain.gain.setValueAtTime(0, now + note.start);
+                    gain.gain.linearRampToValueAtTime(0.15, now + note.start + 0.01);
+                    gain.gain.linearRampToValueAtTime(0.12, now + note.start + note.dur * 0.5);
+                    gain.gain.linearRampToValueAtTime(0, now + note.start + note.dur);
+                    osc.start(now + note.start);
+                    osc.stop(now + note.start + note.dur);
+                });
+            } catch (e) { try { const a = new Audio(
+                        'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAABCAAAAAAA='
+                        );
+                    a.volume = 0.5;
+                    a.play().catch(() => {}); } catch (e2) {} }
+        }
+
+        function playOutgoingSound() {
+            if (!isLoggedIn()) return;
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.value = 600;
+                osc.type = 'sine';
+                const now = audioCtx.currentTime;
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } catch (e) { try { const a = new Audio(
+                        'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAABCAAAAAAA='
+                        );
+                    a.volume = 0.3;
+                    a.play().catch(() => {}); } catch (e2) {} }
+        }
+
+        function playRingtone() {
+            if (!isLoggedIn()) return;
+            stopRingtone();
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const gain = audioCtx.createGain();
+                gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                let isOn = true;
+                const interval = setInterval(() => {
+                    if (!audioCtx || audioCtx.state === 'closed') {
+                        clearInterval(interval);
+                        return;
+                    }
+                    const freq = isOn ? 440 : 480;
+                    const osc = audioCtx.createOscillator();
+                    osc.connect(gain);
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    const startTime = audioCtx.currentTime;
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.2);
+                    isOn = !isOn;
+                }, 400);
+                ringtoneNodes = { gain, interval };
+            } catch (e) { console.warn('Gagal memutar ringtone:', e); }
+        }
+
+        function stopRingtone() {
+            if (ringtoneNodes) {
+                clearInterval(ringtoneNodes.interval);
+                try { ringtoneNodes.gain.disconnect(); } catch (e) {}
+                ringtoneNodes = null;
+            }
+        }
+
+        // ============================================================
+        // 15. FUNGSI BANTU (Chat)
+        // ============================================================
+        function formatTime(timestamp) {
+            if (!timestamp) return '--:--';
+            const d = new Date(timestamp);
+            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getSenderName() {
+            return currentUser ? (currentUser.displayName || currentUser.email || 'User') : 'Anonim';
+        }
+
+        function scrollToBottom() {
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateEmptyState() {
+            const hasMessages = container.querySelector('.message') !== null;
+            emptyState.style.display = hasMessages ? 'none' : 'flex';
+        }
+
+        function getDateLabel(timestamp) {
+            const date = new Date(timestamp);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const y = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+            if (d.getTime() === t.getTime()) return 'Hari Ini';
+            if (d.getTime() === y.getTime()) return 'Kemarin';
+            const diff = Math.floor((t.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+            if (diff < 7) {
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                return days[date.getDay()];
+            }
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function getDateKey(timestamp) {
+            const d = new Date(timestamp);
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate())
+            .padStart(2, '0');
+        }
+
+        function getFileIcon(mimeType, fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (mimeType && mimeType.startsWith('image/')) return '🖼️';
+            if (mimeType && mimeType.startsWith('video/')) return '🎬';
+            if (mimeType && mimeType.startsWith('audio/')) return '🎵';
+            if (ext === 'pdf') return '📄';
+            if (['doc', 'docx'].includes(ext)) return '📝';
+            if (['xls', 'xlsx'].includes(ext)) return '📊';
+            if (['ppt', 'pptx'].includes(ext)) return '📑';
+            if (['zip', 'rar', '7z'].includes(ext)) return '📦';
+            return '📎';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || seconds < 0) return '0 detik';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            if (m === 0) return s + ' detik';
+            if (s === 0) return m + ' menit';
+            return m + ' menit ' + s + ' detik';
+        }
+
+        function formatDateForHistory(timestamp) {
+            const d = new Date(timestamp);
+            const dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            const timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            return dateStr + ' ' + timeStr;
+        }
+
+        // ============================================================
+        // 16. HEADER DROPDOWN
+        // ============================================================
+        headerMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            headerDropdown.classList.toggle('show');
+        });
+        document.addEventListener('click', (e) => {
+            if (!headerDropdown.contains(e.target) && e.target !== headerMenuBtn) {
+                headerDropdown.classList.remove('show');
+            }
+        });
+
+        clearAllChat.addEventListener('click', () => {
+            if (!isLoggedIn()) return;
+            if (confirm('Hapus semua pesan? Tindakan tidak dapat dibatalkan.')) {
+                messagesRef.remove().then(() => {
+                    document.querySelectorAll('.message').forEach(el => el.remove());
+                    document.querySelectorAll('.date-separator').forEach(el => el.remove());
+                    updateEmptyState();
+                    notifiedKeys.clear();
+                    lastDisplayedDateKey = null;
+                    headerDropdown.classList.remove('show');
+                }).catch(err => {
+                    alert('Gagal hapus semua pesan.');
+                });
+            }
+        });
+
+        clearAllHistory.addEventListener('click', () => {
+            headerDropdown.classList.remove('show');
+            if (!isLoggedIn()) return;
+            if (confirm('Hapus semua riwayat panggilan?')) {
+                callHistoryRef.remove().then(() => {
+                    renderCallHistory();
+                }).catch(err => {
+                    alert('Gagal hapus riwayat.');
+                });
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            headerDropdown.classList.remove('show');
+            logout();
+        });
+
+        // ============================================================
+        // 17. REPLY (Chat)
+        // ============================================================
+        let replyTo = null;
+
+        function setReply(key, text, name) {
+            replyTo = { key, text, name };
+            replySender.textContent = name;
+            replyPreview.textContent = text;
+            replyIndicator.classList.add('show');
+            messageInput.focus();
+        }
+
+        function clearReply() {
+            replyTo = null;
+            replyIndicator.classList.remove('show');
+        }
+        cancelReplyBtn.addEventListener('click', clearReply);
+
+        // ============================================================
+        // 18. CONTEXT MENU (Chat)
+        // ============================================================
+        let currentMessageKey = null;
+        let currentMessageElement = null;
+        let currentMessageData = null;
+
+        function showContextMenu(event, key, element, data) {
+            if (!isLoggedIn()) return;
+            event.preventDefault();
+            currentMessageKey = key;
+            currentMessageElement = element;
+            currentMessageData = data;
+            let x = event.clientX || event.touches?.[0]?.clientX || 0;
+            let y = event.clientY || event.touches?.[0]?.clientY || 0;
+            if (x === 0 && y === 0) {
+                const rect = element.getBoundingClientRect();
+                x = rect.left + rect.width / 2;
+                y = rect.top + rect.height / 2;
+            }
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
+            contextMenu.classList.add('show');
+            const menuRect = contextMenu.getBoundingClientRect();
+            if (menuRect.right > window.innerWidth) {
+                contextMenu.style.left = (window.innerWidth - menuRect.width - 10) + 'px';
+            }
+            if (menuRect.bottom > window.innerHeight) {
+                contextMenu.style.top = (window.innerHeight - menuRect.height - 10) + 'px';
+            }
+        }
+
+        function hideContextMenu() {
+            contextMenu.classList.remove('show');
+            currentMessageKey = null;
+            currentMessageElement = null;
+            currentMessageData = null;
+        }
+
+        menuReply.addEventListener('click', () => {
+            if (currentMessageData && isLoggedIn()) {
+                setReply(currentMessageKey, currentMessageData.text, currentMessageData.name);
+                hideContextMenu();
+            }
+        });
+
+        menuForward.addEventListener('click', () => {
+            if (currentMessageData && isLoggedIn()) {
+                const name = getSenderName();
+                const newRef = messagesRef.push();
+                const payload = {
+                    name: name,
+                    text: currentMessageData.text || '',
+                    timestamp: Date.now(),
+                    read: false
+                };
+                if (currentMessageData.imageUrl) {
+                    payload.imageUrl = currentMessageData.imageUrl;
+                }
+                if (currentMessageData.fileUrl) {
+                    payload.fileUrl = currentMessageData.fileUrl;
+                    payload.fileName = currentMessageData.fileName;
+                    payload.fileSize = currentMessageData.fileSize;
+                    payload.fileMime = currentMessageData.fileMime;
+                }
+                newRef.set(payload).then(() => { playOutgoingSound(); }).catch(err => {
+                    alert('Gagal meneruskan pesan.');
+                });
+                hideContextMenu();
+            }
+        });
+
+        menuDelete.addEventListener('click', () => {
+            if (currentMessageKey && currentMessageElement && isLoggedIn()) {
+                const el = currentMessageElement;
+                el.style.transition = 'opacity 0.2s';
+                el.style.opacity = '0';
+                setTimeout(() => { el.remove();
+                    updateEmptyState();
+                    cleanupDateSeparators(); }, 200);
+                hideContextMenu();
+            }
+        });
+
+        menuUnsend.addEventListener('click', () => {
+            if (currentMessageKey && isLoggedIn()) {
+                if (confirm('Batalkan pesan ini untuk semua orang?')) {
+                    messagesRef.child(currentMessageKey).remove().then(() => { hideContextMenu(); }).catch(err => {
+                        alert('Gagal membatalkan pesan.');
+                        hideContextMenu();
+                    });
+                } else { hideContextMenu(); }
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) { hideContextMenu(); }
+        });
+
+        // ============================================================
+        // 19. CLEANUP DATE SEPARATORS
+        // ============================================================
+        function cleanupDateSeparators() {
+            document.querySelectorAll('.date-separator').forEach(sep => {
+                let next = sep.nextElementSibling,
+                    hasAfter = false;
+                while (next) { if (next.classList.contains('message')) { hasAfter = true; break; } next = next
+                        .nextElementSibling; }
+                let prev = sep.previousElementSibling,
+                    hasBefore = false;
+                while (prev) { if (prev.classList.contains('message')) { hasBefore = true; break; } prev = prev
+                        .previousElementSibling; }
+                if (!hasAfter && !hasBefore) sep.remove();
+            });
+        }
+
+        // ============================================================
+        // 20. LINK PREVIEW (Chat)
+        // ============================================================
+        const previewCache = new Map();
+
+        function extractUrls(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.match(urlRegex) || [];
+        }
+
+        function getDomain(url) {
+            try {
+                const u = new URL(url);
+                return u.hostname.replace('www.', '');
+            } catch (e) { return url; }
+        }
+
+        async function fetchLinkPreview(url) {
+            const cacheKey = url;
+            if (previewCache.has(cacheKey)) return previewCache.get(cacheKey);
+            try {
+                const stored = localStorage.getItem('lp_' + cacheKey);
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    if (Date.now() - data.timestamp < 3600000) {
+                        previewCache.set(cacheKey, data);
+                        return data;
+                    }
+                }
+            } catch (e) {}
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Gagal fetch');
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const getMeta = (name) => {
+                    let meta = doc.querySelector(`meta[property="og:${name}"]`);
+                    if (meta) return meta.getAttribute('content');
+                    meta = doc.querySelector(`meta[name="twitter:${name}"]`);
+                    if (meta) return meta.getAttribute('content');
+                    meta = doc.querySelector(`meta[name="${name}"]`);
+                    if (meta) return meta.getAttribute('content');
+                    return null;
+                };
+                const title = getMeta('title') || doc.querySelector('title')?.textContent || '';
+                const description = getMeta('description') || '';
+                let image = getMeta('image') || '';
+                if (image && !image.startsWith('http')) {
+                    try { const base = new URL(url);
+                        image = new URL(image, base).href; } catch (e) {}
+                }
+                const result = {
+                    title: title.trim(),
+                    description: description.trim(),
+                    image: image,
+                    domain: getDomain(url),
+                    url: url,
+                    timestamp: Date.now()
+                };
+                previewCache.set(cacheKey, result);
+                try { localStorage.setItem('lp_' + cacheKey, JSON.stringify(result)); } catch (e) {}
+                return result;
+            } catch (error) {
+                const fallback = {
+                    title: 'Link',
+                    description: '',
+                    image: '',
+                    domain: getDomain(url),
+                    url: url,
+                    timestamp: Date.now()
+                };
+                previewCache.set(cacheKey, fallback);
+                return fallback;
+            }
+        }
+
+        // ============================================================
+        // 21. RENDER MESSAGE (Chat)
+        // ============================================================
+        let lastDisplayedDateKey = null;
+
+        function renderMessage(key, data, isOwn) {
+            if (!isLoggedIn()) return;
+            if (emptyState.style.display !== 'none') emptyState.style.display = 'none';
+
+            const sender = data.name || 'Anonim';
+            const text = data.text || '';
+            const time = data.timestamp || Date.now();
+            const read = data.read === true;
+            const replyData = data.replyTo || null;
+            const imageUrl = data.imageUrl || null;
+            const fileUrl = data.fileUrl || null;
+            const fileName = data.fileName || null;
+            const fileSize = data.fileSize || null;
+            const fileMime = data.fileMime || null;
+
+            if (container.querySelector(`[data-key="${key}"]`)) return;
+
+            const dateKey = getDateKey(time);
+            if (lastDisplayedDateKey !== dateKey) {
+                const sep = document.createElement('div');
+                sep.className = 'date-separator';
+                const label = document.createElement('span');
+                label.className = 'date-label';
+                label.textContent = getDateLabel(time);
+                sep.appendChild(label);
+                container.appendChild(sep);
+                lastDisplayedDateKey = dateKey;
+            }
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isOwn ? 'own' : 'other'}`;
+            msgDiv.setAttribute('data-key', key);
+            msgDiv.setAttribute('data-timestamp', time);
+
+            const senderSpan = document.createElement('div');
+            senderSpan.className = 'sender';
+            senderSpan.textContent = sender;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+
+            if (replyData) {
+                const q = document.createElement('div');
+                q.className = 'reply-quote';
+                const s = document.createElement('span');
+                s.className = 'reply-sender';
+                s.textContent = replyData.name || 'Anonim';
+                const t = document.createElement('span');
+                t.className = 'reply-text';
+                t.textContent = replyData.text || '';
+                q.appendChild(s);
+                q.appendChild(document.createTextNode(' '));
+                q.appendChild(t);
+                bubble.appendChild(q);
+            }
+
+            if (imageUrl) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bubble-image-wrapper';
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = 'Gambar';
+                img.loading = 'lazy';
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.onerror = function() {
+                    console.warn('Gagal memuat gambar:', imageUrl);
+                    wrapper.innerHTML = '<div style="padding:12px;color:#999;text-align:center;">⚠️ Gagal memuat gambar</div>';
+                };
+                img.onclick = (e) => {
+                    e.stopPropagation();
+                    window.open(imageUrl, '_blank');
+                };
+                wrapper.appendChild(img);
+                if (isOwn) {
+                    const checkMark = document.createElement('div');
+                    checkMark.className = 'image-check';
+                    checkMark.textContent = '✓';
+                    wrapper.appendChild(checkMark);
+                }
+                bubble.appendChild(wrapper);
+            }
+
+            if (fileUrl && !imageUrl) {
+                const fileDiv = document.createElement('a');
+                fileDiv.className = 'file-attachment';
+                fileDiv.href = fileUrl;
+                fileDiv.target = '_blank';
+                fileDiv.rel = 'noopener noreferrer';
+                fileDiv.title = 'Download ' + (fileName || 'file');
+
+                const icon = document.createElement('span');
+                icon.className = 'file-icon';
+                const mime = fileMime || '';
+                const name = fileName || 'file';
+                icon.textContent = getFileIcon(mime, name);
+
+                const info = document.createElement('div');
+                info.className = 'file-info';
+                const nameSpan = document.createElement('div');
+                nameSpan.className = 'file-name';
+                nameSpan.textContent = name;
+                const sizeSpan = document.createElement('div');
+                sizeSpan.className = 'file-size';
+                sizeSpan.textContent = fileSize ? formatFileSize(fileSize) : '';
+                info.appendChild(nameSpan);
+                info.appendChild(sizeSpan);
+
+                const downloadIcon = document.createElement('span');
+                downloadIcon.className = 'file-download';
+                downloadIcon.textContent = '⬇️';
+
+                fileDiv.appendChild(icon);
+                fileDiv.appendChild(info);
+                fileDiv.appendChild(downloadIcon);
+                bubble.appendChild(fileDiv);
+            }
+
+            if (text) {
+                const textNode = document.createElement('div');
+                textNode.className = 'bubble-text';
+                textNode.textContent = text;
+                bubble.appendChild(textNode);
+            }
+
+            const urls = extractUrls(text);
+            if (urls.length > 0 && !imageUrl && !fileUrl) {
+                const linkUrl = urls[0];
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'link-preview';
+                previewContainer.setAttribute('data-url', linkUrl);
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'lp-loading';
+                loadingDiv.textContent = '🔍 Memuat preview...';
+                previewContainer.appendChild(loadingDiv);
+                bubble.appendChild(previewContainer);
+
+                fetchLinkPreview(linkUrl)
+                    .then(preview => {
+                        previewContainer.innerHTML = '';
+                        if (preview.image) {
+                            const img = document.createElement('img');
+                            img.className = 'lp-image';
+                            img.src = preview.image;
+                            img.alt = preview.title || 'Preview';
+                            img.onerror = () => { img.style.display = 'none'; };
+                            previewContainer.appendChild(img);
+                        }
+                        const content = document.createElement('div');
+                        content.className = 'lp-content';
+                        if (preview.title) {
+                            const title = document.createElement('div');
+                            title.className = 'lp-title';
+                            title.textContent = preview.title;
+                            content.appendChild(title);
+                        }
+                        if (preview.description) {
+                            const desc = document.createElement('div');
+                            desc.className = 'lp-desc';
+                            desc.textContent = preview.description;
+                            content.appendChild(desc);
+                        }
+                        const domain = document.createElement('div');
+                        domain.className = 'lp-domain';
+                        domain.textContent = preview.domain || getDomain(linkUrl);
+                        content.appendChild(domain);
+                        previewContainer.appendChild(content);
+                        previewContainer.style.cursor = 'pointer';
+                        previewContainer.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            window.open(linkUrl, '_blank');
+                        });
+                    })
+                    .catch(() => {
+                        previewContainer.innerHTML = '';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'lp-error';
+                        errorDiv.textContent = '⚠️ Gagal memuat preview';
+                        previewContainer.appendChild(errorDiv);
+                        previewContainer.style.cursor = 'pointer';
+                        previewContainer.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            window.open(linkUrl, '_blank');
+                        });
+                    });
+            }
+
+            if (!text && !imageUrl && !fileUrl) {
+                const placeholder = document.createElement('span');
+                placeholder.textContent = '📎';
+                bubble.appendChild(placeholder);
+            }
+
+            const footer = document.createElement('div');
+            footer.className = 'footer';
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'time';
+            timeSpan.textContent = formatTime(time);
+            const checkSpan = document.createElement('span');
+            checkSpan.className = 'check';
+            checkSpan.textContent = read ? '✓✓' : '✓';
+            footer.appendChild(timeSpan);
+            if (isOwn) footer.appendChild(checkSpan);
+
+            msgDiv.appendChild(senderSpan);
+            msgDiv.appendChild(bubble);
+            msgDiv.appendChild(footer);
+
+            bubble.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showContextMenu(e, key, msgDiv, { text, name: sender, imageUrl, fileUrl, fileName, fileSize,
+                    fileMime });
+            });
+            bubble.addEventListener('touchstart', (e) => {
+                // Biarkan click handle
+            }, { passive: true });
+
+            container.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function updateCheckMark(key, read) {
+            const el = container.querySelector(`[data-key="${key}"]`);
+            if (!el) return;
+            const check = el.querySelector('.check');
+            if (check) check.textContent = read ? '✓✓' : '✓';
+        }
+
+        function rebuildDateSeparators() {
+            document.querySelectorAll('.date-separator').forEach(el => el.remove());
+            const msgs = container.querySelectorAll('.message');
+            if (msgs.length === 0) { lastDisplayedDateKey = null; return; }
+            let lastKey = null;
+            msgs.forEach(msg => {
+                const ts = parseInt(msg.getAttribute('data-timestamp'));
+                if (!ts) return;
+                const key = getDateKey(ts);
+                if (lastKey !== key) {
+                    const sep = document.createElement('div');
+                    sep.className = 'date-separator';
+                    const label = document.createElement('span');
+                    label.className = 'date-label';
+                    label.textContent = getDateLabel(ts);
+                    sep.appendChild(label);
+                    container.insertBefore(sep, msg);
+                    lastKey = key;
+                }
+            });
+            if (msgs.length > 0) {
+                const last = msgs[msgs.length - 1];
+                const ts = parseInt(last.getAttribute('data-timestamp'));
+                if (ts) lastDisplayedDateKey = getDateKey(ts);
+            }
+        }
+
+        // ============================================================
+        // 22. LOAD MESSAGES (Realtime)
+        // ============================================================
+        let isInitialLoad = true;
+        const notifiedKeys = new Set();
+
+        function loadMessages() {
+            if (!isLoggedIn()) return;
+            messagesRef.off();
+
+            messagesRef.orderByChild('timestamp').limitToLast(100).on('child_added', (snapshot) => {
+                if (!isLoggedIn()) return;
+                const key = snapshot.key;
+                const data = snapshot.val();
+                const currentUser = getSenderName();
+                const isOwn = (data.name === currentUser);
+                renderMessage(key, data, isOwn);
+                if (!isOwn && data.read !== true && !notifiedKeys.has(key)) {
+                    playBirdSound();
+                    notifiedKeys.add(key);
+                    messagesRef.child(key).update({ read: true }).catch(() => {});
+                }
+                if (isInitialLoad) {
+                    isInitialLoad = false;
+                    setTimeout(rebuildDateSeparators, 300);
+                }
+            });
+
+            messagesRef.on('child_changed', (snapshot) => {
+                if (!isLoggedIn()) return;
+                const data = snapshot.val();
+                if (data.read !== undefined) updateCheckMark(snapshot.key, data.read);
+            });
+
+            messagesRef.on('child_removed', (snapshot) => {
+                if (!isLoggedIn()) return;
+                const el = container.querySelector(`[data-key="${snapshot.key}"]`);
+                if (el) {
+                    el.style.transition = 'opacity 0.2s';
+                    el.style.opacity = '0';
+                    setTimeout(() => { el.remove();
+                        updateEmptyState();
+                        cleanupDateSeparators();
+                        rebuildDateSeparators(); }, 200);
+                }
+            });
+        }
+
+        // ============================================================
+        // 23. KIRIM PESAN (Chat + Gambar)
+        // ============================================================
+        let pendingFile = null;
+        let isUploading = false;
+
+        function showFilePreview(file, isImage = false) {
+            if (isImage) {
+                filePreviewIcon.innerHTML = '<i class="fas fa-image"></i>';
+                filePreviewInfo.textContent = '📷 ' + file.name + ' (' + formatFileSize(file.size) + ')';
+            } else {
+                filePreviewIcon.innerHTML = '<i class="fas fa-file"></i>';
+                filePreviewInfo.textContent = '📎 ' + file.name + ' (' + formatFileSize(file.size) + ')';
+            }
+            filePreviewContainer.classList.add('show');
+            uploadProgress.textContent = '';
+            pendingFile = file;
+        }
+
+        function clearFilePreview() {
+            filePreviewContainer.classList.remove('show');
+            filePreviewIcon.innerHTML = '<i class="fas fa-image"></i>';
+            filePreviewInfo.textContent = 'Gambar';
+            uploadProgress.textContent = '';
+            pendingFile = null;
+            isUploading = false;
+            attachBtn.classList.remove('uploading');
+            sendBtn.disabled = false;
+        }
+
+        cancelFileBtn.addEventListener('click', clearFilePreview);
+
+        attachBtn.addEventListener('click', () => {
+            if (isUploading || !isLoggedIn()) return;
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && isLoggedIn()) {
+                if (file.size > 20 * 1024 * 1024) {
+                    alert('Ukuran gambar maksimal 20MB.');
+                    fileInput.value = '';
+                    return;
+                }
+                if (!file.type.startsWith('image/')) {
+                    alert('Hanya file gambar yang didukung.');
+                    fileInput.value = '';
+                    return;
+                }
+                try {
+                    const compressed = await compressImage(file, 800, 800, 0.7);
+                    showFilePreview(compressed, true);
+                } catch (err) {
+                    console.warn('Kompresi gagal, menggunakan file asli:', err);
+                    showFilePreview(file, true);
+                }
+            }
+            fileInput.value = '';
+        });
+
+        async function sendMessage() {
+            if (!isLoggedIn()) {
+                alert('Silakan login terlebih dahulu.');
+                return;
+            }
+            const text = messageInput.value.trim();
+            const hasFile = pendingFile !== null;
+
+            if (!text && !hasFile) {
+                messageInput.focus();
+                return;
+            }
+
+            const name = getSenderName();
+            let imageUrl = null;
+            let fileUrl = null,
+                fileName = null,
+                fileSize = null,
+                fileMime = null;
+
+            if (hasFile) {
+                isUploading = true;
+                attachBtn.classList.add('uploading');
+                sendBtn.disabled = true;
+                uploadProgress.textContent = '⏳ Uploading...';
+
+                try {
+                    const file = pendingFile;
+                    if (file.type && file.type.startsWith('image/')) {
+                        try {
+                            imageUrl = await uploadToImgur(file);
+                            uploadProgress.textContent = '✅ Selesai (Imgur)';
+                        } catch (imgurErr) {
+                            console.warn('Imgur gagal, coba GoFile:', imgurErr);
+                            fileUrl = await uploadToGoFile(file);
+                            fileName = file.name;
+                            fileSize = file.size;
+                            fileMime = file.type || 'image/jpeg';
+                            uploadProgress.textContent = '✅ Selesai (GoFile)';
+                        }
+                    } else {
+                        fileUrl = await uploadToGoFile(file);
+                        fileName = file.name;
+                        fileSize = file.size;
+                        fileMime = file.type || 'application/octet-stream';
+                        uploadProgress.textContent = '✅ Selesai (GoFile)';
+                    }
+                } catch (error) {
+                    alert('❌ Gagal upload: ' + error.message);
+                    isUploading = false;
+                    attachBtn.classList.remove('uploading');
+                    sendBtn.disabled = false;
+                    uploadProgress.textContent = '';
+                    return;
+                }
+                isUploading = false;
+                attachBtn.classList.remove('uploading');
+                sendBtn.disabled = false;
+                uploadProgress.textContent = '';
+            }
+
+            const newRef = messagesRef.push();
+            const payload = {
+                name: name,
+                text: text || '',
+                timestamp: Date.now(),
+                read: false
+            };
+
+            if (imageUrl) payload.imageUrl = imageUrl;
+            if (fileUrl) {
+                payload.fileUrl = fileUrl;
+                payload.fileName = fileName;
+                payload.fileSize = fileSize;
+                payload.fileMime = fileMime;
+            }
+            if (replyTo) {
+                payload.replyTo = {
+                    key: replyTo.key,
+                    text: replyTo.text,
+                    name: replyTo.name
+                };
+                clearReply();
+            }
+
+            newRef.set(payload)
+                .then(() => {
+                    playOutgoingSound();
+                    setTimeout(() => {
+                        newRef.update({ read: true }).catch(() => {});
+                    }, 1000);
+                    messageInput.value = '';
+                    clearFilePreview();
+                    messageInput.focus();
+                    emojiPickerContainer.classList.remove('show');
+                })
+                .catch((err) => {
+                    console.error('Gagal kirim:', err);
+                    alert('Gagal mengirim pesan.');
+                });
+        }
+
+        // ============================================================
+        // 24. EMOJI PICKER (Chat)
+        // ============================================================
+        let isEmojiPickerVisible = false;
+        emojiToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isEmojiPickerVisible = !isEmojiPickerVisible;
+            emojiPickerContainer.classList.toggle('show', isEmojiPickerVisible);
+        });
+        emojiPicker.addEventListener('emoji-click', (event) => {
+            const emoji = event.detail.unicode;
+            const start = messageInput.selectionStart;
+            const end = messageInput.selectionEnd;
+            const text = messageInput.value;
+            messageInput.value = text.substring(0, start) + emoji + text.substring(end);
+            const newPos = start + emoji.length;
+            messageInput.setSelectionRange(newPos, newPos);
+            messageInput.focus();
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-picker-container') && !e.target.closest('.icon-btn')) {
+                if (emojiPickerContainer.classList.contains('show')) {
+                    emojiPickerContainer.classList.remove('show');
+                    isEmojiPickerVisible = false;
+                }
+            }
+        });
+
+        // ============================================================
+        // 25. EVENT LISTENERS (Chat)
+        // ============================================================
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault();
+                sendMessage(); }
+        });
+
+        // ============================================================
+        // 26. CALL HISTORY UI
+        // ============================================================
+
+        function openCallHistory() {
+            if (!isLoggedIn()) return;
+            callHistoryOverlay.classList.add('show');
+            renderCallHistory();
+        }
+
+        function closeCallHistory() {
+            callHistoryOverlay.classList.remove('show');
+        }
+
+        historyCallBtn.addEventListener('click', openCallHistory);
+        closeHistoryBtn.addEventListener('click', closeCallHistory);
+        callHistoryOverlay.addEventListener('click', (e) => {
+            if (e.target === callHistoryOverlay) closeCallHistory();
+        });
+
+        clearHistoryBtn.addEventListener('click', () => {
+            if (!isLoggedIn()) return;
+            if (confirm('Hapus semua riwayat panggilan?')) {
+                callHistoryRef.remove().then(() => {
+                    renderCallHistory();
+                }).catch(err => {
+                    alert('Gagal hapus riwayat.');
+                });
+            }
+        });
+
+        // ============================================================
+        // 27. CALL HISTORY - SAVE & RENDER
+        // ============================================================
+
+        function saveCallRecord(type, isVideo, callerName, calleeName, status, duration, startTime, endTime) {
+            const recordId = callHistoryRef.push().key;
+            const record = {
+                type: type,
+                isVideo: isVideo,
+                callerName: callerName,
+                calleeName: calleeName,
+                status: status,
+                startTime: startTime || Date.now(),
+                endTime: endTime || Date.now(),
+                duration: duration || 0,
+                timestamp: Date.now()
+            };
+            callHistoryRef.child(recordId).set(record).catch(err => {
+                console.warn('Gagal simpan riwayat panggilan:', err);
+            });
+            return recordId;
+        }
+
+        function updateCallRecord(recordId, updates) {
+            callHistoryRef.child(recordId).update(updates).catch(err => {
+                console.warn('Gagal update riwayat panggilan:', err);
+            });
+        }
+
+        function renderCallHistory() {
+            if (!isLoggedIn()) return;
+            callHistoryRef.orderByChild('timestamp').limitToLast(100).once('value', (snapshot) => {
+                const historyBody = document.getElementById('callHistoryBody');
+                const empty = document.getElementById('historyEmpty');
+
+                const items = historyBody.querySelectorAll('.call-history-item');
+                items.forEach(el => el.remove());
+
+                const records = [];
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    data._key = childSnapshot.key;
+                    records.push(data);
+                });
+
+                records.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                if (records.length === 0) {
+                    empty.style.display = 'flex';
+                    return;
+                }
+                empty.style.display = 'none';
+
+                records.forEach((data) => {
+                    const item = document.createElement('div');
+                    item.className = 'call-history-item';
+
+                    const isAnswered = data.status === 'answered';
+                    const isMissed = data.status === 'missed';
+                    const isOutgoing = data.status === 'outgoing';
+                    const isVideo = data.isVideo === true;
+
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'ch-icon';
+                    if (isAnswered) {
+                        iconDiv.classList.add('answered');
+                        iconDiv.innerHTML = isVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-phone"></i>';
+                    } else if (isMissed) {
+                        iconDiv.classList.add('missed');
+                        iconDiv.innerHTML = '<i class="fas fa-phone-slash"></i>';
+                    } else {
+                        iconDiv.classList.add('outgoing');
+                        iconDiv.innerHTML = isVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-phone"></i>';
+                    }
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'ch-info';
+
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'ch-name';
+                    const nameText = isOutgoing ? (data.callerName || 'Anda') : (data.callerName || 'Seseorang');
+                    nameDiv.textContent = nameText;
+
+                    const badge = document.createElement('span');
+                    badge.className = 'ch-status-badge';
+                    if (isAnswered) {
+                        badge.classList.add('answered');
+                        badge.textContent = 'Terjawab';
+                    } else if (isMissed) {
+                        badge.classList.add('missed');
+                        badge.textContent = 'Tidak terjawab';
+                    } else {
+                        badge.classList.add('outgoing');
+                        badge.textContent = 'Keluar';
+                    }
+                    nameDiv.appendChild(badge);
+
+                    const metaDiv = document.createElement('div');
+                    metaDiv.className = 'ch-meta';
+
+                    const typeSpan = document.createElement('span');
+                    typeSpan.className = 'ch-type';
+                    typeSpan.innerHTML = isVideo ? '<i class="fas fa-video"></i> Video' : '<i class="fas fa-phone"></i> Suara';
+
+                    const durSpan = document.createElement('span');
+                    durSpan.className = 'ch-duration';
+                    if (isMissed) {
+                        durSpan.textContent = '⏱️ Tidak terjawab';
+                    } else if (data.duration !== undefined && data.duration > 0) {
+                        durSpan.textContent = '⏱️ ' + formatDuration(data.duration);
+                    } else {
+                        durSpan.textContent = '⏱️ 0 detik';
+                    }
+
+                    const timeSpan = document.createElement('span');
+                    timeSpan.className = 'ch-time';
+                    timeSpan.textContent = '🕐 ' + formatDateForHistory(data.startTime || data.timestamp);
+
+                    metaDiv.appendChild(typeSpan);
+                    metaDiv.appendChild(durSpan);
+                    metaDiv.appendChild(timeSpan);
+
+                    infoDiv.appendChild(nameDiv);
+                    infoDiv.appendChild(metaDiv);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'ch-delete';
+                    deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    deleteBtn.title = 'Hapus riwayat ini';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (confirm('Hapus riwayat panggilan ini?')) {
+                            callHistoryRef.child(data._key).remove().then(() => {
+                                renderCallHistory();
+                            }).catch(err => {
+                                alert('Gagal hapus.');
+                            });
+                        }
+                    });
+
+                    item.appendChild(iconDiv);
+                    item.appendChild(infoDiv);
+                    item.appendChild(deleteBtn);
+
+                    historyBody.appendChild(item);
+                });
+            });
+        }
+
+        callHistoryRef.on('child_added', () => {
+            if (callHistoryOverlay.classList.contains('show')) {
+                renderCallHistory();
+            }
+        });
+        callHistoryRef.on('child_removed', () => {
+            if (callHistoryOverlay.classList.contains('show')) {
+                renderCallHistory();
+            }
+        });
+        callHistoryRef.on('child_changed', () => {
+            if (callHistoryOverlay.classList.contains('show')) {
+                renderCallHistory();
+            }
+        });
+
+        // ============================================================
+        // 28. WEBRTC - CALL LOGIC + FLIP CAMERA
+        // ============================================================
+
+        function getCallerName() {
+            return getSenderName();
+        }
+
+        function showCallOverlay(name, status, video) {
+            callerNameDisplay.textContent = name;
+            callStatusDisplay.textContent = status || 'Menghubungkan...';
+            isVideoCall = video;
+            callOverlay.classList.add('show');
+            if (!video) {
+                localVideo.style.display = 'none';
+                remoteVideo.style.display = 'none';
+                flipCameraBtn.style.display = 'none';
+            } else {
+                localVideo.style.display = 'block';
+                remoteVideo.style.display = 'block';
+                flipCameraBtn.style.display = 'flex';
+            }
+            toggleMicBtn.classList.remove('muted');
+            toggleMicBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+            toggleVideoBtn.classList.remove('video-off');
+            toggleVideoBtn.innerHTML = '<i class="fas fa-video"></i>';
+            isMuted = false;
+            isVideoOff = false;
+            currentFacingMode = 'user';
+        }
+
+        function hideCallOverlay() {
+            callOverlay.classList.remove('show');
+            stopRingtone();
+            endCallAndSaveHistory();
+            closeCall();
+        }
+
+        function closeCall() {
+            stopRingtone();
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+            if (currentCallId) {
+                callsRef.child(currentCallId).remove().catch(() => {});
+                currentCallId = null;
+            }
+            isCaller = false;
+            incomingCallId = null;
+            incomingCallPopup.classList.remove('show');
+            callOverlay.classList.remove('show');
+            activeCallRecord = null;
+            callStartTime = 0;
+            callConnectedTime = 0;
+            currentFacingMode = 'user';
+        }
+
+        function endCallAndSaveHistory() {
+            if (activeCallRecord && activeCallRecord.callId) {
+                const endTime = Date.now();
+                let duration = 0;
+                if (callConnectedTime > 0) {
+                    duration = Math.floor((endTime - callConnectedTime) / 1000);
+                } else if (callStartTime > 0) {
+                    duration = Math.floor((endTime - callStartTime) / 1000);
+                }
+
+                const status = activeCallRecord.status === 'ringing' ? 'missed' : 'answered';
+                const finalStatus = (activeCallRecord.status === 'ringing' && isCaller) ? 'outgoing' : status;
+
+                updateCallRecord(activeCallRecord.callId, {
+                    endTime: endTime,
+                    duration: duration,
+                    status: finalStatus
+                });
+
+                if (activeCallRecord.status === 'ringing' && !isCaller) {
+                    updateCallRecord(activeCallRecord.callId, {
+                        status: 'missed',
+                        duration: 0
+                    });
+                }
+
+                activeCallRecord = null;
+                callStartTime = 0;
+                callConnectedTime = 0;
+            }
+        }
+
+        function createCallRecord(type, isVideo, callerName, calleeName) {
+            const recordId = callHistoryRef.push().key;
+            const now = Date.now();
+            const record = {
+                type: type,
+                isVideo: isVideo,
+                callerName: callerName,
+                calleeName: calleeName || 'Penerima',
+                status: 'ringing',
+                startTime: now,
+                endTime: 0,
+                duration: 0,
+                timestamp: now
+            };
+            callHistoryRef.child(recordId).set(record).catch(err => {
+                console.warn('Gagal simpan riwayat panggilan:', err);
+            });
+            return recordId;
+        }
+
+        function createPeerConnection(isCallerFlag, callId) {
+            const pc = new RTCPeerConnection(rtcConfig);
+
+            if (localStream) {
+                localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, localStream);
+                });
+            }
+
+            pc.ontrack = (event) => {
+                if (!remoteStream) {
+                    remoteStream = new MediaStream();
+                }
+                event.streams[0].getTracks().forEach(track => {
+                    remoteStream.addTrack(track);
+                });
+                remoteVideo.srcObject = remoteStream;
+                callStatusDisplay.textContent = '📞 Tersambung';
+                stopRingtone();
+
+                if (activeCallRecord && activeCallRecord.callId) {
+                    callConnectedTime = Date.now();
+                    updateCallRecord(activeCallRecord.callId, { status: 'answered' });
+                }
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    callsRef.child(callId).child('candidates').push({
+                        candidate: event.candidate.toJSON(),
+                        from: isCallerFlag ? 'caller' : 'callee'
+                    });
+                }
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                const state = pc.iceConnectionState;
+                if (state === 'connected' && activeCallRecord && activeCallRecord.callId) {
+                    callConnectedTime = Date.now();
+                    updateCallRecord(activeCallRecord.callId, { status: 'answered' });
+                }
+                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                    callStatusDisplay.textContent = '❌ Panggilan terputus';
+                    stopRingtone();
+                    setTimeout(() => {
+                        endCallAndSaveHistory();
+                        hideCallOverlay();
+                    }, 1500);
+                }
+            };
+
+            return pc;
+        }
+
+        // ============================================================
+        // 29. FLIP CAMERA FUNCTION
+        // ============================================================
+        async function flipCamera() {
+            if (!localStream || !isVideoCall) return;
+
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (!videoTrack) return;
+
+            // Tentukan facing mode baru
+            const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            currentFacingMode = newFacingMode;
+
+            try {
+                // Hentikan track video lama
+                videoTrack.stop();
+
+                // Buat stream baru dengan facing mode yang diinginkan
+                const constraints = {
+                    audio: true,
+                    video: {
+                        facingMode: newFacingMode,
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
+
+                const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Ambil track audio dari stream lama (jika ada)
+                const audioTracks = localStream.getAudioTracks();
+                const newAudioTracks = newStream.getAudioTracks();
+
+                // Buat stream baru dengan audio dari stream lama + video dari stream baru
+                const finalStream = new MediaStream();
+
+                // Tambahkan audio dari stream lama atau stream baru
+                if (audioTracks.length > 0) {
+                    audioTracks.forEach(track => finalStream.addTrack(track));
+                } else if (newAudioTracks.length > 0) {
+                    newAudioTracks.forEach(track => finalStream.addTrack(track));
+                }
+
+                // Tambahkan video dari stream baru
+                const newVideoTracks = newStream.getVideoTracks();
+                newVideoTracks.forEach(track => finalStream.addTrack(track));
+
+                // Ganti local stream
+                localStream = finalStream;
+                localVideo.srcObject = localStream;
+
+                // Update peer connection dengan track baru
+                if (peerConnection) {
+                    // Hapus sender video lama
+                    const senders = peerConnection.getSenders();
+                    const videoSenders = senders.filter(s => s.track && s.track.kind === 'video');
+                    videoSenders.forEach(sender => {
+                        peerConnection.removeTrack(sender);
+                    });
+
+                    // Tambahkan track video baru
+                    newVideoTracks.forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                    });
+
+                    // Re-negotiate
+                    try {
+                        const offer = await peerConnection.createOffer();
+                        await peerConnection.setLocalDescription(offer);
+                        if (currentCallId) {
+                            await callsRef.child(currentCallId).update({
+                                sdp: offer
+                            });
+                        }
+                    } catch (err) {
+                        console.warn('Re-negotiation error:', err);
+                    }
+                }
+
+                // Update UI
+                flipCameraBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                flipCameraBtn.classList.remove('video-off');
+
+            } catch (error) {
+                console.error('Gagal flip camera:', error);
+                alert('Tidak dapat mengganti kamera: ' + error.message);
+                // Kembalikan ke mode sebelumnya
+                currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            }
+        }
+
+        // ============================================================
+        // 30. MULAI PANGGILAN (Caller)
+        // ============================================================
+        async function startCall(video) {
+            if (!isLoggedIn()) {
+                alert('Silakan login terlebih dahulu.');
+                return;
+            }
+            if (currentCallId) {
+                alert('Panggilan sedang berlangsung.');
+                return;
+            }
+
+            const name = getCallerName();
+            if (!name || name === 'Anonim') {
+                alert('Isi nama Anda terlebih dahulu.');
+                return;
+            }
+
+            try {
+                const constraints = {
+                    audio: true,
+                    video: video ? { 
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } : false
+                };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                localVideo.srcObject = localStream;
+
+                const callId = callsRef.push().key;
+                currentCallId = callId;
+                isCaller = true;
+                isVideoCall = video;
+
+                const recordId = createCallRecord(video ? 'video' : 'voice', video, name, 'Penerima');
+                activeCallRecord = {
+                    callId: recordId,
+                    startTime: Date.now(),
+                    status: 'ringing',
+                    isVideo: video,
+                    type: video ? 'video' : 'voice',
+                    callerName: name,
+                    calleeName: 'Penerima'
+                };
+                callStartTime = Date.now();
+
+                showCallOverlay(name, 'Menelepon...', video);
+                if (!video) {
+                    localVideo.style.display = 'none';
+                    remoteVideo.style.display = 'none';
+                    flipCameraBtn.style.display = 'none';
+                } else {
+                    flipCameraBtn.style.display = 'flex';
+                }
+
+                peerConnection = createPeerConnection(true, callId);
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                await callsRef.child(callId).set({
+                    type: 'offer',
+                    sdp: offer,
+                    from: name,
+                    isVideo: video,
+                    timestamp: Date.now()
+                });
+
+                callStatusDisplay.textContent = '⏳ Menunggu penerima...';
+
+                const answerListener = callsRef.child(callId).child('answer');
+                const onAnswer = (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        if (data.sdp) {
+                            const answer = new RTCSessionDescription(data.sdp);
+                            peerConnection.setRemoteDescription(answer).catch(console.error);
+                            callStatusDisplay.textContent = '📞 Tersambung';
+                            stopRingtone();
+                            if (activeCallRecord && activeCallRecord.callId) {
+                                callConnectedTime = Date.now();
+                                updateCallRecord(activeCallRecord.callId, { status: 'answered' });
+                            }
+                        }
+                        answerListener.off('value', onAnswer);
+                    }
+                };
+                answerListener.on('value', onAnswer);
+
+                const candListener = callsRef.child(callId).child('candidates');
+                const onCandidate = (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && data.from === 'callee' && data.candidate) {
+                        try {
+                            const candidate = new RTCIceCandidate(data.candidate);
+                            peerConnection.addIceCandidate(candidate).catch(console.error);
+                        } catch (e) { console.warn('Gagal add candidate', e); }
+                    }
+                };
+                candListener.on('child_added', onCandidate);
+
+                window._callListeners = { answerListener, candListener, onAnswer, onCandidate };
+
+            } catch (error) {
+                console.error('Gagal memulai panggilan:', error);
+                alert('Tidak dapat mengakses mikrofon/kamera: ' + error.message);
+                closeCall();
+            }
+        }
+
+        // ============================================================
+        // 31. MENERIMA PANGGILAN (Callee)
+        // ============================================================
+        function acceptIncomingCall() {
+            if (!isLoggedIn()) return;
+            if (!incomingCallId) return;
+            const callId = incomingCallId;
+
+            callsRef.child(callId).once('value', async (snapshot) => {
+                const data = snapshot.val();
+                if (!data || !data.sdp) {
+                    alert('Panggilan sudah berakhir.');
+                    incomingCallPopup.classList.remove('show');
+                    incomingCallId = null;
+                    stopRingtone();
+                    return;
+                }
+
+                try {
+                    const video = data.isVideo || false;
+                    isVideoCall = video;
+                    currentCallId = callId;
+                    isCaller = false;
+
+                    const constraints = {
+                        audio: true,
+                        video: video ? { 
+                            facingMode: 'user',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        } : false
+                    };
+                    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    localVideo.srcObject = localStream;
+
+                    const name = getCallerName();
+                    const recordId = createCallRecord(video ? 'video' : 'voice', video, data.from || 'Penelepon', name);
+                    activeCallRecord = {
+                        callId: recordId,
+                        startTime: Date.now(),
+                        status: 'ringing',
+                        isVideo: video,
+                        type: video ? 'video' : 'voice',
+                        callerName: data.from || 'Penelepon',
+                        calleeName: name
+                    };
+                    callStartTime = Date.now();
+
+                    showCallOverlay(data.from || 'Penelepon', 'Menerima...', video);
+                    if (!video) {
+                        localVideo.style.display = 'none';
+                        remoteVideo.style.display = 'none';
+                        flipCameraBtn.style.display = 'none';
+                    } else {
+                        flipCameraBtn.style.display = 'flex';
+                    }
+
+                    stopRingtone();
+
+                    peerConnection = createPeerConnection(false, callId);
+
+                    const offer = new RTCSessionDescription(data.sdp);
+                    await peerConnection.setRemoteDescription(offer);
+
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+
+                    await callsRef.child(callId).child('answer').set({
+                        sdp: answer,
+                        from: name
+                    });
+
+                    callStatusDisplay.textContent = '📞 Tersambung';
+                    if (activeCallRecord && activeCallRecord.callId) {
+                        callConnectedTime = Date.now();
+                        updateCallRecord(activeCallRecord.callId, { status: 'answered' });
+                    }
+
+                    incomingCallPopup.classList.remove('show');
+                    incomingCallId = null;
+
+                    const candListener = callsRef.child(callId).child('candidates');
+                    const onCandidate = (snapshot) => {
+                        const candData = snapshot.val();
+                        if (candData && candData.from === 'caller' && candData.candidate) {
+                            try {
+                                const candidate = new RTCIceCandidate(candData.candidate);
+                                peerConnection.addIceCandidate(candidate).catch(console.error);
+                            } catch (e) { console.warn('Gagal add candidate', e); }
+                        }
+                    };
+                    candListener.on('child_added', onCandidate);
+                    window._callListeners = { candListener, onCandidate };
+
+                } catch (error) {
+                    console.error('Gagal menerima panggilan:', error);
+                    alert('Tidak dapat mengakses mikrofon/kamera: ' + error.message);
+                    closeCall();
+                }
+            });
+        }
+
+        // ============================================================
+        // 32. LISTENER PANGGILAN MASUK
+        // ============================================================
+        function listenForIncomingCalls() {
+            if (!isLoggedIn()) return;
+            callsRef.off();
+            callsRef.on('child_added', (snapshot) => {
+                if (!isLoggedIn()) return;
+                const data = snapshot.val();
+                const callId = snapshot.key;
+
+                if (data.type === 'offer' && data.from !== getCallerName()) {
+                    if (currentCallId) {
+                        callsRef.child(callId).remove().catch(() => {});
+                        return;
+                    }
+
+                    incomingCallId = callId;
+                    incCallerName.textContent = data.from || 'Seseorang';
+                    incCallType.innerHTML = data.isVideo ?
+                        '<i class="fas fa-video"></i> Panggilan Video' :
+                        '<i class="fas fa-phone"></i> Panggilan Suara';
+                    incomingCallPopup.classList.add('show');
+
+                    playRingtone();
+
+                    const name = getCallerName();
+                    const recordId = createCallRecord(
+                        data.isVideo ? 'video' : 'voice',
+                        data.isVideo || false,
+                        data.from || 'Penelepon',
+                        name
+                    );
+                    activeCallRecord = {
+                        callId: recordId,
+                        startTime: Date.now(),
+                        status: 'ringing',
+                        isVideo: data.isVideo || false,
+                        type: data.isVideo ? 'video' : 'voice',
+                        callerName: data.from || 'Penelepon',
+                        calleeName: name
+                    };
+                    callStartTime = Date.now();
+
+                    setTimeout(() => {
+                        if (incomingCallId === callId) {
+                            incomingCallPopup.classList.remove('show');
+                            callsRef.child(callId).remove().catch(() => {});
+                            incomingCallId = null;
+                            stopRingtone();
+                            if (activeCallRecord && activeCallRecord.callId) {
+                                updateCallRecord(activeCallRecord.callId, {
+                                    status: 'missed',
+                                    duration: 0,
+                                    endTime: Date.now()
+                                });
+                                activeCallRecord = null;
+                                callStartTime = 0;
+                            }
+                        }
+                    }, 30000);
+                }
+            });
+        }
+
+        // ============================================================
+        // 33. TOMBOL PANGGILAN
+        // ============================================================
+        voiceCallBtn.addEventListener('click', () => {
+            startCall(false);
+        });
+
+        videoCallBtn.addEventListener('click', () => {
+            startCall(true);
+        });
+
+        // ============================================================
+        // 34. TOMBOL FLIP CAMERA
+        // ============================================================
+        flipCameraBtn.addEventListener('click', flipCamera);
+
+        // ============================================================
+        // 35. TOMBOL INCOMING CALL
+        // ============================================================
+        incAcceptBtn.addEventListener('click', () => {
+            stopRingtone();
+            acceptIncomingCall();
+        });
+
+        incRejectBtn.addEventListener('click', () => {
+            if (incomingCallId) {
+                callsRef.child(incomingCallId).remove().catch(() => {});
+                incomingCallId = null;
+                incomingCallPopup.classList.remove('show');
+                stopRingtone();
+                if (activeCallRecord && activeCallRecord.callId) {
+                    updateCallRecord(activeCallRecord.callId, {
+                        status: 'missed',
+                        duration: 0,
+                        endTime: Date.now()
+                    });
+                    activeCallRecord = null;
+                    callStartTime = 0;
+                }
+            }
+        });
+
+        // ============================================================
+        // 36. TOMBOL KONTROL PANGGILAN
+        // ============================================================
+        endCallBtn.addEventListener('click', () => {
+            if (confirm('Akhiri panggilan?')) {
+                endCallAndSaveHistory();
+                hideCallOverlay();
+            }
+        });
+
+        toggleMicBtn.addEventListener('click', () => {
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                if (audioTracks.length > 0) {
+                    isMuted = !isMuted;
+                    audioTracks[0].enabled = !isMuted;
+                    toggleMicBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' :
+                        '<i class="fas fa-microphone"></i>';
+                    toggleMicBtn.classList.toggle('muted', isMuted);
+                }
+            }
+        });
+
+        toggleVideoBtn.addEventListener('click', () => {
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                if (videoTracks.length > 0) {
+                    isVideoOff = !isVideoOff;
+                    videoTracks[0].enabled = !isVideoOff;
+                    toggleVideoBtn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' :
+                        '<i class="fas fa-video"></i>';
+                    toggleVideoBtn.classList.toggle('video-off', isVideoOff);
+                }
+            }
+        });
+
+        // ============================================================
+        // 37. CLEANUP PANGGILAN DI FIREBASE
+        // ============================================================
+        callsRef.on('child_removed', (snapshot) => {
+            const removedId = snapshot.key;
+            if (currentCallId === removedId) {
+                callStatusDisplay.textContent = '❌ Panggilan diakhiri';
+                stopRingtone();
+                endCallAndSaveHistory();
+                setTimeout(() => hideCallOverlay(), 1500);
+            }
+            if (incomingCallId === removedId) {
+                incomingCallPopup.classList.remove('show');
+                incomingCallId = null;
+                stopRingtone();
+                if (activeCallRecord && activeCallRecord.callId) {
+                    updateCallRecord(activeCallRecord.callId, {
+                        status: 'missed',
+                        duration: 0,
+                        endTime: Date.now()
+                    });
+                    activeCallRecord = null;
+                    callStartTime = 0;
+                }
+            }
+        });
+
+        // ============================================================
+        // 38. INISIALISASI
+        // ============================================================
+
+        // Observer untuk empty state
+        const observer = new MutationObserver(() => updateEmptyState());
+        observer.observe(container, { childList: true, subtree: true });
+
+        console.log('💬 Ja\'O Chating & Call + Flip Camera siap!');
+        console.log('📸 Gunakan tombol 🔄 untuk ganti kamera depan/belakang saat video call');
+        console.log('📱 Fitur flip camera seperti di WhatsApp');
     </script>
 </body>
 </html>
