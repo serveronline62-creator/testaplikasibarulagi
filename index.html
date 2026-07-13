@@ -1,1 +1,655 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>💬 Ja'O Chating & Call</title>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Emoji Picker -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.18.2/index.js"></script>
+
+    <!-- Font Awesome 6 (Free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <style>
+        /* ----- RESET & GLOBAL ----- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #e5ddd5;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; padding: 0;
+        }
+        .chat-container {
+            width: 100%; max-width: 520px; background: #ffffff;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); overflow: hidden;
+            display: flex; flex-direction: column; height: 100vh; max-height: 100vh;
+            border: none; border-radius: 0; position: relative;
+        }
+        @media (min-width: 600px) {
+            .chat-container { height: 90vh; max-height: 700px; border-radius: 28px; border: 1px solid rgba(0,0,0,0.04); margin: 16px; }
+        }
+
+        /* ----- HEADER ----- */
+        .chat-header { background: #00a884; padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; position: relative; z-index: 10; }
+        .chat-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #00a884; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .chat-header .info { flex: 1; color: #fff; }
+        .chat-header .info h1 { font-size: 18px; font-weight: 600; line-height: 1.2; }
+        .chat-header .info .status { font-size: 13px; color: #d9fdd3; display: flex; align-items: center; gap: 4px; }
+        .chat-header .info .status::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #25d366; border-radius: 50%; animation: pulse-dot 1.8s ease-in-out infinite; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+        .chat-header .actions { display: flex; gap: 6px; color: #fff; align-items: center; }
+        .chat-header .actions button, .chat-header .actions .menu-dots { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 6px; border-radius: 50%; transition: background 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .chat-header .actions button:hover, .chat-header .actions .menu-dots:hover { background: rgba(255,255,255,0.2); }
+
+        .header-dropdown { position: absolute; right: 12px; top: 60px; background: #fff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); padding: 8px 0; min-width: 200px; display: none; z-index: 1100; }
+        .header-dropdown.show { display: block; }
+        .header-dropdown .drop-item { padding: 10px 18px; font-size: 14px; color: #1a1a1a; cursor: pointer; display: flex; align-items: center; gap: 12px; border: none; background: transparent; width: 100%; text-align: left; }
+        .header-dropdown .drop-item:hover { background: #f0f0f0; }
+        .header-dropdown .drop-item.danger { color: #e74c3c; }
+        .header-dropdown .drop-item.danger:hover { background: #fde8e8; }
+
+        /* ----- MESSAGE AREA ----- */
+        .messages-wrapper { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; background: #efeae2; scroll-behavior: smooth; }
+        .message { display: flex; flex-direction: column; max-width: 82%; animation: fade-in 0.2s ease; }
+        .message.own { align-self: flex-end; align-items: flex-end; }
+        .message.other { align-self: flex-start; align-items: flex-start; }
+        @keyframes fade-in { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+        .message .bubble { padding: 9px 14px; border-radius: 16px; word-wrap: break-word; line-height: 1.5; font-size: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .message.own .bubble { background: #dcf8c6; border-bottom-right-radius: 4px; }
+        .message.other .bubble { background: #ffffff; border-bottom-left-radius: 4px; }
+        .message .sender { font-size: 12px; font-weight: 600; margin-bottom: 2px; padding-left: 4px; color: #4a4a4a; }
+        .message .footer { display: flex; align-items: center; gap: 4px; margin-top: 3px; padding: 0 4px; }
+        .message .time { font-size: 10px; color: #7a7a7a; }
+
+        /* ----- INPUT AREA ----- */
+        .input-area { padding: 8px 12px 12px; background: #f0f0f0; border-top: 1px solid #d1d1d1; flex-shrink: 0; }
+        .input-row { display: flex; gap: 6px; align-items: center; }
+        .input-row .icon-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; padding: 4px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #54656f; }
+        .input-row input[type="text"] { flex: 1; padding: 10px 14px; border: none; border-radius: 30px; background: #fff; font-size: 15px; outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .input-row input[type="text"]:focus { box-shadow: 0 0 0 2px #00a884; }
+        .input-row input.name-input { flex: 0 0 100px; background: #f8f8f8; }
+        .input-row button.send-btn { padding: 10px 18px; border: none; border-radius: 30px; background: #00a884; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,168,132,0.3); }
+        
+        .emoji-picker-container { display: none; justify-content: flex-end; margin-top: 4px; }
+        .emoji-picker-container.show { display: flex; }
+        emoji-picker { width: 100%; max-width: 350px; height: 280px; --background: #fff; border-radius: 16px; }
+
+        /* ----- CALL OVERLAY ----- */
+        .call-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; color: #fff; border-radius: inherit; overflow: hidden; }
+        .call-overlay.show { display: flex; }
+        .call-video-container { position: relative; width: 100%; flex: 1; background: #000; display: flex; align-items: center; justify-content: center; }
+        .call-video-container #remoteVideo { width: 100%; height: 100%; object-fit: cover; background: #222; }
+        .call-video-container #localVideo { position: absolute; bottom: 120px; right: 20px; width: 120px; height: 160px; object-fit: cover; border-radius: 16px; border: 2px solid rgba(255,255,255,0.5); background: #333; z-index: 10; }
+        
+        .call-info { position: absolute; top: 40px; left: 0; width: 100%; text-align: center; z-index: 20; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .call-info .caller-name { font-size: 22px; font-weight: 600; }
+        .call-info .call-status { font-size: 14px; opacity: 0.8; margin-top: 4px; }
+        .call-info .call-timer { font-size: 16px; font-weight: 500; margin-top: 6px; letter-spacing: 1px; }
+
+        .call-controls { padding: 24px; background: rgba(0,0,0,0.6); width: 100%; display: flex; justify-content: center; gap: 20px; backdrop-filter: blur(10px); flex-shrink: 0; }
+        .call-controls button { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; transition: transform 0.15s, background 0.2s; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .call-controls button:active { transform: scale(0.9); }
+        .btn-end-call { background: #e74c3c !important; }
+        .btn-end-call:hover { background: #c0392b !important; }
+        .btn-toggle-mic { background: #444; }
+        .btn-toggle-mic.muted { background: #e67e22; }
+        .btn-toggle-video { background: #444; }
+        .btn-toggle-video.video-off { background: #e67e22; }
+        .btn-switch-cam { background: #555; } /* Tombol Switch Kamera */
+        .btn-switch-cam:hover { background: #777; }
+
+        /* ----- INCOMING CALL POPUP ----- */
+        .incoming-call { position: absolute; bottom: 100px; left: 20px; right: 20px; background: #fff; color: #1a1a1a; border-radius: 20px; padding: 20px; z-index: 1500; box-shadow: 0 10px 40px rgba(0,0,0,0.4); display: none; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+        .incoming-call.show { display: flex; }
+        .incoming-call .inc-actions { display: flex; gap: 30px; margin-top: 6px; }
+        .inc-actions button { width: 56px; height: 56px; border-radius: 50%; border: none; font-size: 24px; cursor: pointer; color: #fff; }
+        .inc-accept { background: #25d366; }
+        .inc-reject { background: #e74c3c; }
+
+        /* ----- CALL HISTORY PANEL ----- */
+        .call-history-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 3000; display: none; justify-content: flex-end; border-radius: inherit; }
+        .call-history-overlay.show { display: flex; }
+        .call-history-panel { width: 100%; max-width: 380px; height: 100%; background: #fff; box-shadow: -8px 0 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; border-radius: 0; overflow: hidden; }
+        @media (min-width: 600px) { .call-history-panel { border-radius: 28px 0 0 28px; } }
+        .call-history-header { padding: 16px 20px; background: #00a884; color: #fff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .call-history-header .close-history { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .call-history-body { flex: 1; overflow-y: auto; padding: 16px; background: #f7f7f7; }
+        .call-history-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #999; text-align: center; gap: 8px; }
+        .call-history-empty .big-icon { font-size: 48px; opacity: 0.4; }
+        .call-history-item { background: #fff; border-radius: 14px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+        .call-history-item .ch-icon { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .ch-icon.answered { background: #e6f7ed; color: #00a884; }
+        .ch-icon.missed { background: #fde8e8; color: #e74c3c; }
+        .ch-icon.outgoing { background: #e3f0ff; color: #2196f3; }
+        .call-history-item .ch-info { flex: 1; }
+        .call-history-item .ch-name { font-weight: 600; font-size: 15px; color: #1a1a1a; }
+        .call-history-item .ch-meta { font-size: 12px; color: #888; margin-top: 2px; }
+        .call-history-footer { padding: 12px 16px; border-top: 1px solid #eee; background: #f7f7f7; display: flex; justify-content: center; flex-shrink: 0; }
+        .clear-history-btn { background: transparent; border: none; color: #e74c3c; font-size: 13px; font-weight: 500; cursor: pointer; padding: 8px 18px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
+        .clear-history-btn:hover { background: #fde8e8; }
+
+        @media (max-width: 480px) {
+            .call-overlay .call-controls button { width: 50px; height: 50px; font-size: 20px; }
+            .call-video-container #localVideo { width: 90px; height: 120px; bottom: 100px; right: 10px; }
+            .input-row input.name-input { flex: 0 0 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container" id="appContainer">
+
+        <!-- HEADER -->
+        <div class="chat-header">
+            <div class="avatar"><i class="fas fa-comment-dots"></i></div>
+            <div class="info">
+                <h1>Ja'O Chat</h1>
+                <div class="status"><span>Online</span></div>
+            </div>
+            <div class="actions">
+                <button id="voiceCallBtn" title="Panggilan Suara"><i class="fas fa-phone"></i></button>
+                <button id="videoCallBtn" title="Panggilan Video"><i class="fas fa-video"></i></button>
+                <button id="historyCallBtn" title="Riwayat Panggilan"><i class="fas fa-history"></i></button>
+                <span class="menu-dots" id="headerMenuBtn"><i class="fas fa-ellipsis-v"></i></span>
+            </div>
+            <div class="header-dropdown" id="headerDropdown">
+                <button class="drop-item danger" id="clearAllChat"><span class="icon"><i class="fas fa-trash-alt"></i></span> Hapus Semua Chat</button>
+                <div class="divider"></div>
+                <button class="drop-item danger" id="clearAllHistory"><span class="icon"><i class="fas fa-broom"></i></span> Hapus Riwayat Panggilan</button>
+            </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div class="messages-wrapper" id="messageContainer"></div>
+
+        <!-- INPUT AREA -->
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" class="name-input" id="nameInput" placeholder="Nama" maxlength="20" value="User" />
+                <input type="text" class="msg-input" id="messageInput" placeholder="Ketik pesan..." maxlength="500" autocomplete="off" />
+                <button class="icon-btn" id="emojiToggle" type="button" aria-label="Emoji"><i class="far fa-smile"></i></button>
+                <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div class="emoji-picker-container" id="emojiPickerContainer">
+                <emoji-picker id="emojiPicker"></emoji-picker>
+            </div>
+        </div>
+
+        <!-- CALL OVERLAY -->
+        <div class="call-overlay" id="callOverlay">
+            <div class="call-info">
+                <div class="caller-name" id="callerNameDisplay">Memanggil...</div>
+                <div class="call-status" id="callStatusDisplay">Menghubungkan...</div>
+                <div class="call-timer" id="callTimerDisplay">00:00</div>
+            </div>
+            <div class="call-video-container">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+            <div class="call-controls">
+                <button class="btn-toggle-mic" id="toggleMicBtn" title="Mute/Unmute Mic"><i class="fas fa-microphone"></i></button>
+                <button class="btn-toggle-video" id="toggleVideoBtn" title="Matikan/Hidupkan Kamera"><i class="fas fa-video"></i></button>
+                <!-- TOMBOL ROTASI KAMERA -->
+                <button class="btn-switch-cam" id="switchCamBtn" title="Ganti Kamera"><i class="fas fa-sync-alt"></i></button>
+                <button class="btn-end-call" id="endCallBtn"><i class="fas fa-phone-slash"></i></button>
+            </div>
+        </div>
+
+        <!-- INCOMING CALL POPUP -->
+        <div class="incoming-call" id="incomingCallPopup">
+            <div class="inc-caller" id="incCallerName">User</div>
+            <div class="inc-type" id="incCallType"><i class="fas fa-video"></i> Panggilan Video</div>
+            <div class="inc-actions">
+                <button class="inc-reject" id="incRejectBtn"><i class="fas fa-times"></i></button>
+                <button class="inc-accept" id="incAcceptBtn"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
+
+        <!-- CALL HISTORY PANEL -->
+        <div class="call-history-overlay" id="callHistoryOverlay">
+            <div class="call-history-panel">
+                <div class="call-history-header">
+                    <h2><i class="fas fa-history"></i> Riwayat</h2>
+                    <button class="close-history" id="closeHistoryBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="call-history-body" id="callHistoryBody">
+                    <div class="call-history-empty" id="callHistoryEmpty">
+                        <div class="big-icon"><i class="fas fa-phone-slash"></i></div>
+                        <p>Belum ada riwayat</p>
+                        <div class="sub">Panggilan akan muncul di sini</div>
+                    </div>
+                </div>
+                <div class="call-history-footer">
+                    <button class="clear-history-btn" id="clearHistoryBtn"><i class="fas fa-trash"></i> Hapus Semua Riwayat</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // ========================================================
+        // FIREBASE CONFIG (Ganti dengan konfigurasi Firebase Anda)
+        // ========================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD1234567890-EXAMPLE_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef123456"
+        };
+        
+        if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // ========================================================
+        // VARIABEL GLOBAL
+        // ========================================================
+        let myName = localStorage.getItem('jao_name') || 'User' + Math.floor(Math.random()*100);
+        document.getElementById('nameInput').value = myName;
+
+        let localStream = null;
+        let peerConnection = null;
+        let currentCallRef = null;
+        let currentFacingMode = 'user'; // 'user' (depan) atau 'environment' (belakang)
+        let isMuted = false;
+        let isVideoOff = false;
+        let callTimerInterval = null;
+        let callStartTime = null;
+
+        const ICE_SERVERS = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+        // ========================================================
+        // UI INTERACTIONS
+        // ========================================================
+        // Header Dropdown
+        document.getElementById('headerMenuBtn').onclick = () => document.getElementById('headerDropdown').classList.toggle('show');
+        window.onclick = (e) => { if(!e.target.closest('#headerMenuBtn')) document.getElementById('headerDropdown').classList.remove('show'); };
+
+        // Emoji Picker
+        document.getElementById('emojiToggle').onclick = () => document.getElementById('emojiPickerContainer').classList.toggle('show');
+        document.querySelector('emoji-picker').addEventListener('emoji-click', event => {
+            document.getElementById('messageInput').value += event.detail.unicode;
+            document.getElementById('messageInput').focus();
+        });
+
+        // Call History Panel
+        document.getElementById('historyCallBtn').onclick = () => { document.getElementById('callHistoryOverlay').classList.add('show'); loadCallHistory(); };
+        document.getElementById('closeHistoryBtn').onclick = () => document.getElementById('callHistoryOverlay').classList.remove('show');
+
+        // Save name on change
+        document.getElementById('nameInput').addEventListener('keyup', (e) => {
+            myName = e.target.value.trim() || 'Anonim';
+            localStorage.setItem('jao_name', myName);
+        });
+
+        // ========================================================
+        // CHAT LOGIC
+        // ========================================================
+        const msgContainer = document.getElementById('messageContainer');
+        
+        document.getElementById('sendBtn').onclick = sendMessage;
+        document.getElementById('messageInput').addEventListener('keyup', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const msgData = {
+                sender: myName,
+                text: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            db.ref('messages').push(msgData);
+            input.value = '';
+        }
+
+        db.ref('messages').on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            renderMessage(data);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        });
+
+        function renderMessage(data) {
+            const isOwn = data.sender === myName;
+            const div = document.createElement('div');
+            div.className = `message ${isOwn ? 'own' : 'other'}`;
+            
+            const time = new Date(data.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+            div.innerHTML = `
+                <div class="sender">${data.sender}</div>
+                <div class="bubble">${data.text}</div>
+                <div class="footer"><span class="time">${time}</span></div>
+            `;
+            msgContainer.appendChild(div);
+        }
+
+        // Clear Chat
+        document.getElementById('clearAllChat').onclick = () => {
+            if(confirm('Hapus semua chat?')) db.ref('messages').remove();
+            msgContainer.innerHTML = '';
+            document.getElementById('headerDropdown').classList.remove('show');
+        };
+
+        // ========================================================
+        // CALL LOGIC (WebRTC + Firebase Signaling)
+        // ========================================================
+        const callOverlay = document.getElementById('callOverlay');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+
+        // Memulai Video Call
+        document.getElementById('videoCallBtn').onclick = () => startCall(true);
+        document.getElementById('voiceCallBtn').onclick = () => startCall(false);
+
+        async function startCall(isVideo) {
+            try {
+                currentFacingMode = 'user'; // Selalu mulai dari kamera depan
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: isVideo ? { facingMode: currentFacingMode } : false,
+                    audio: true
+                });
+                
+                localVideo.srcObject = localStream;
+                localVideo.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+                
+                showCallUI(myName, isVideo ? 'Panggilan Video...' : 'Panggilan Suara...');
+                
+                const callId = 'call_' + Date.now();
+                currentCallRef = db.ref('calls/' + callId);
+                
+                await currentCallRef.set({ caller: myName, type: isVideo ? 'video' : 'voice', status: 'ringing' });
+                
+                createPeerConnection();
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                
+                db.ref('signaling/' + callId + '/offer').set(offer);
+                
+                // Listen for answer
+                db.ref('signaling/' + callId + '/answer').on('value', async (snapshot) => {
+                    if(snapshot.val() && !peerConnection.currentRemoteDescription) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(snapshot.val()));
+                        callStartTime = Date.now();
+                        startCallTimer();
+                        updateCallStatus('Terhubung');
+                    }
+                });
+
+                // Listen for ICE candidates from remote
+                db.ref('signaling/' + callId + '/callerCandidates').on('child_added', async (snapshot) => {
+                    if(snapshot.val()) {
+                        try { await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val())); } catch(e) {}
+                    }
+                });
+
+            } catch(err) {
+                alert('Gagal mengakses kamera/mikrofon: ' + err.message);
+                endCall();
+            }
+        }
+
+        // Listen for incoming calls
+        db.ref('calls').orderByChild('status').equalTo('ringing').limitToLast(1).on('child_added', async (snapshot) => {
+            const callData = snapshot.val();
+            if(callData.caller !== myName) {
+                const callId = snapshot.key;
+                currentCallRef = db.ref('calls/' + callId);
+                
+                document.getElementById('incCallerName').innerText = callData.caller;
+                document.getElementById('incCallType').innerHTML = callData.type === 'video' ? '<i class="fas fa-video"></i> Panggilan Video' : '<i class="fas fa-phone"></i> Panggilan Suara';
+                document.getElementById('incomingCallPopup').classList.add('show');
+
+                // Accept
+                document.getElementById('incAcceptBtn').onclick = async () => {
+                    document.getElementById('incomingCallPopup').classList.remove('show');
+                    try {
+                        currentFacingMode = 'user';
+                        localStream = await navigator.mediaDevices.getUserMedia({
+                            video: callData.type === 'video' ? { facingMode: currentFacingMode } : false,
+                            audio: true
+                        });
+                        localVideo.srcObject = localStream;
+                        localVideo.style.transform = 'scaleX(-1)';
+                        
+                        showCallUI(callData.caller, 'Menghubungkan...');
+
+                        createPeerConnection();
+                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                        // Get offer
+                        const offerSnap = await db.ref('signaling/' + callId + '/offer').once('value');
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(offerSnap.val()));
+
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        db.ref('signaling/' + callId + '/answer').set(answer);
+
+                        // Save own ICE candidates
+                        peerConnection.onicecandidate = (event) => {
+                            if(event.candidate) db.ref('signaling/' + callId + '/callerCandidates').push(event.candidate.toJSON());
+                        };
+
+                        // Listen for remote candidates
+                        db.ref('signaling/' + callId + '/calleeCandidates').on('child_added', async (snapshot) => {
+                            if(snapshot.val()) {
+                                try { await peerConnection.addIceCandidate(new RTCIceCandidate(snapshot.val())); } catch(e) {}
+                            }
+                        });
+
+                        await currentCallRef.update({ status: 'answered' });
+                        callStartTime = Date.now();
+                        startCallTimer();
+                        updateCallStatus('Terhubung');
+
+                    } catch(err) {
+                        alert('Gagal menerima panggilan: ' + err.message);
+                        endCall();
+                    }
+                };
+
+                // Reject
+                document.getElementById('incRejectBtn').onclick = () => {
+                    document.getElementById('incomingCallPopup').classList.remove('show');
+                    currentCallRef.update({ status: 'rejected' });
+                };
+            }
+        });
+
+        function createPeerConnection() {
+            peerConnection = new RTCPeerConnection(ICE_SERVERS);
+            
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            peerConnection.onicecandidate = (event) => {
+                if(event.candidate && currentCallRef) {
+                    const callId = currentCallRef.key;
+                    db.ref('signaling/' + callId + '/calleeCandidates').push(event.candidate.toJSON());
+                }
+            };
+
+            peerConnection.oniceconnectionstatechange = () => {
+                if(peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+                    endCall();
+                }
+            };
+        }
+
+        // ==============================================
+        // FITUR ROTASI KAMERA (SWITCH CAMERA)
+        // ==============================================
+        document.getElementById('switchCamBtn').onclick = switchCamera;
+
+        async function switchCamera() {
+            if(!localStream) return;
+
+            // Cek apakah device punya lebih dari 1 kamera
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            if (videoDevices.length <= 1) {
+                alert("Perangkat ini hanya memiliki satu kamera.");
+                return;
+            }
+
+            // Toggle mode
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+
+            // Ambil track video lama
+            const oldVideoTrack = localStream.getVideoTracks()[0];
+            
+            try {
+                // Request stream baru dengan facingMode yang baru
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode },
+                    audio: false // Mikrofon tetap pakai yang lama
+                });
+
+                const newVideoTrack = newStream.getVideoTracks()[0];
+
+                // 1. Replace track di Peer Connection agar lawan bicara melihat perubahan
+                if (peerConnection) {
+                    const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) await sender.replaceTrack(newVideoTrack);
+                }
+
+                // 2. Hentikan kamera lama & update localStream
+                oldVideoTrack.stop();
+                localStream.removeTrack(oldVideoTrack);
+                localStream.addTrack(newVideoTrack);
+
+                // 3. Update tampilan video lokal & efek cermin
+                localVideo.srcObject = localStream;
+                localVideo.style.transform = currentFacingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+
+            } catch(err) {
+                console.error("Gagal switch kamera:", err);
+                alert("Gagal mengganti kamera.");
+                currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user'; // Kembalikan state jika gagal
+            }
+        }
+
+        // End Call
+        document.getElementById('endCallBtn').onclick = endCall;
+
+        function endCall() {
+            if(localStream) localStream.getTracks().forEach(track => track.stop());
+            if(peerConnection) peerConnection.close();
+            if(currentCallRef) currentCallRef.update({ status: 'ended' });
+            
+            peerConnection = null;
+            localStream = null;
+            localVideo.srcObject = null;
+            remoteVideo.srcObject = null;
+            
+            callOverlay.classList.remove('show');
+            document.getElementById('incomingCallPopup').classList.remove('show');
+            
+            clearInterval(callTimerInterval);
+            
+            // Save to history
+            if(callStartTime) {
+                const duration = Math.floor((Date.now() - callStartTime) / 1000);
+                saveCallHistory('answered', duration);
+            }
+            callStartTime = null;
+        }
+
+        function showCallUI(name, status) {
+            document.getElementById('callerNameDisplay').innerText = name;
+            updateCallStatus(status);
+            callOverlay.classList.add('show');
+            document.getElementById('emojiPickerContainer').classList.remove('show');
+        }
+
+        function updateCallStatus(status) { document.getElementById('callStatusDisplay').innerText = status; }
+
+        function startCallTimer() {
+            clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                const seconds = Math.floor((Date.now() - callStartTime) / 1000);
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('callTimerDisplay').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        // Toggle Mic & Video
+        document.getElementById('toggleMicBtn').onclick = () => {
+            isMuted = !isMuted;
+            localStream.getAudioTracks()[0].enabled = !isMuted;
+            const btn = document.getElementById('toggleMicBtn');
+            btn.classList.toggle('muted', isMuted);
+            btn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+        };
+
+        document.getElementById('toggleVideoBtn').onclick = () => {
+            isVideoOff = !isVideoOff;
+            localStream.getVideoTracks()[0].enabled = !isVideoOff;
+            const btn = document.getElementById('toggleVideoBtn');
+            btn.classList.toggle('video-off', isVideoOff);
+            btn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
+        };
+
+        // ========================================================
+        // CALL HISTORY LOGIC
+        // ========================================================
+        function saveCallHistory(status, duration) {
+            const historyData = {
+                name: document.getElementById('callerNameDisplay').innerText || myName,
+                type: localStream && localStream.getVideoTracks().length > 0 ? 'video' : 'voice',
+                status: status,
+                duration: duration,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            db.ref('callHistory').push(historyData);
+        }
+
+        function loadCallHistory() {
+            const body = document.getElementById('callHistoryBody');
+            db.ref('callHistory').orderByChild('timestamp').once('value', (snapshot) => {
+                let html = '';
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    const time = new Date(data.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                    const m = Math.floor(data.duration / 60).toString().padStart(2,'0');
+                    const s = (data.duration % 60).toString().padStart(2,'0');
+                    
+                    let iconClass = data.status === 'missed' ? 'missed' : (data.status === 'answered' ? 'answered' : 'outgoing');
+                    let iconName = data.type === 'video' ? 'fa-video' : 'fa-phone';
+                    
+                    html += `
+                        <div class="call-history-item">
+                            <div class="ch-icon ${iconClass}"><i class="fas ${iconName}"></i></div>
+                            <div class="ch-info">
+                                <div class="ch-name">${data.name}</div>
+                                <div class="ch-meta">${time} • ${m}:${s}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                body.innerHTML = html || `<div class="call-history-empty"><div class="big-icon"><i class="fas fa-phone-slash"></i></div><p>Belum ada riwayat</p></div>`;
+            });
+        }
+
+        document.getElementById('clearAllHistory').onclick = () => {
+            if(confirm('Hapus riwayat panggilan?')) db.ref('callHistory').remove();
+            document.getElementById('callHistoryBody').innerHTML = `<div class="call-history-empty"><div class="big-icon"><i class="fas fa-phone-slash"></i></div><p>Belum ada riwayat</p></div>`;
+            document.getElementById('headerDropdown').classList.remove('show');
+        };
+    </script>
+</body>
+</html>
