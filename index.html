@@ -909,6 +909,25 @@
             box-shadow: none;
         }
 
+        /* Gaya khusus untuk tombol attach (klip) seperti WhatsApp */
+        .input-row .icon-btn#attachBtn {
+            font-size: 24px;
+            color: #54656f;
+            transform: rotate(-45deg);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .input-row .icon-btn#attachBtn:hover {
+            transform: rotate(-45deg) scale(1.05);
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .input-row .icon-btn#attachBtn:active {
+            transform: rotate(-45deg) scale(0.9);
+        }
+        .input-row .icon-btn#attachBtn.uploading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
         .emoji-picker-container {
             position: relative;
             width: 100%;
@@ -1102,7 +1121,6 @@
         .call-overlay .call-controls .btn-toggle-video.video-off {
             background: #e67e22;
         }
-        /* Tombol flip camera - baru */
         .call-overlay .call-controls .btn-flip-camera {
             background: #2d7d46;
         }
@@ -1513,6 +1531,9 @@
                 height: 36px;
                 font-size: 18px;
             }
+            .input-row .icon-btn#attachBtn {
+                font-size: 20px;
+            }
             .input-row button.send-btn {
                 padding: 8px 14px;
                 font-size: 14px;
@@ -1760,7 +1781,8 @@
             <div class="input-row">
                 <input type="text" class="name-input" id="nameInput" placeholder="Nama" maxlength="20" value="User" readonly />
                 <input type="text" class="msg-input" id="messageInput" placeholder="Ketik pesan..." maxlength="500" autocomplete="off" />
-                <button class="icon-btn" id="attachBtn" title="Kirim Gambar"><i class="fas fa-image"></i></button>
+                <!-- Tombol attach dengan icon klip (paperclip) seperti WhatsApp -->
+                <button class="icon-btn" id="attachBtn" title="Lampirkan file"><i class="fas fa-paperclip"></i></button>
                 <button class="icon-btn" id="emojiToggle" type="button" aria-label="Emoji"><i class="far fa-smile"></i></button>
                 <button class="send-btn" id="sendBtn">
                     <span>Kirim</span>
@@ -2355,8 +2377,7 @@
         let isMuted = false;
         let isVideoOff = false;
         let incomingCallId = null;
-        // Untuk flip camera
-        let currentFacingMode = 'user'; // 'user' atau 'environment'
+        let currentFacingMode = 'user';
 
         // ============================================================
         // 13. CALL HISTORY TRACKING
@@ -3704,15 +3725,12 @@
             const videoTrack = localStream.getVideoTracks()[0];
             if (!videoTrack) return;
 
-            // Tentukan facing mode baru
             const newFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
             currentFacingMode = newFacingMode;
 
             try {
-                // Hentikan track video lama
                 videoTrack.stop();
 
-                // Buat stream baru dengan facing mode yang diinginkan
                 const constraints = {
                     audio: true,
                     video: {
@@ -3724,43 +3742,34 @@
 
                 const newStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-                // Ambil track audio dari stream lama (jika ada)
                 const audioTracks = localStream.getAudioTracks();
                 const newAudioTracks = newStream.getAudioTracks();
 
-                // Buat stream baru dengan audio dari stream lama + video dari stream baru
                 const finalStream = new MediaStream();
 
-                // Tambahkan audio dari stream lama atau stream baru
                 if (audioTracks.length > 0) {
                     audioTracks.forEach(track => finalStream.addTrack(track));
                 } else if (newAudioTracks.length > 0) {
                     newAudioTracks.forEach(track => finalStream.addTrack(track));
                 }
 
-                // Tambahkan video dari stream baru
                 const newVideoTracks = newStream.getVideoTracks();
                 newVideoTracks.forEach(track => finalStream.addTrack(track));
 
-                // Ganti local stream
                 localStream = finalStream;
                 localVideo.srcObject = localStream;
 
-                // Update peer connection dengan track baru
                 if (peerConnection) {
-                    // Hapus sender video lama
                     const senders = peerConnection.getSenders();
                     const videoSenders = senders.filter(s => s.track && s.track.kind === 'video');
                     videoSenders.forEach(sender => {
                         peerConnection.removeTrack(sender);
                     });
 
-                    // Tambahkan track video baru
                     newVideoTracks.forEach(track => {
                         peerConnection.addTrack(track, localStream);
                     });
 
-                    // Re-negotiate
                     try {
                         const offer = await peerConnection.createOffer();
                         await peerConnection.setLocalDescription(offer);
@@ -3774,14 +3783,12 @@
                     }
                 }
 
-                // Update UI
                 flipCameraBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
                 flipCameraBtn.classList.remove('video-off');
 
             } catch (error) {
                 console.error('Gagal flip camera:', error);
                 alert('Tidak dapat mengganti kamera: ' + error.message);
-                // Kembalikan ke mode sebelumnya
                 currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
             }
         }
@@ -3808,7 +3815,7 @@
             try {
                 const constraints = {
                     audio: true,
-                    video: video ? { 
+                    video: video ? {
                         facingMode: 'user',
                         width: { ideal: 640 },
                         height: { ideal: 480 }
@@ -3924,7 +3931,7 @@
 
                     const constraints = {
                         audio: true,
-                        video: video ? { 
+                        video: video ? {
                             facingMode: 'user',
                             width: { ideal: 640 },
                             height: { ideal: 480 }
@@ -4174,13 +4181,12 @@
         // 38. INISIALISASI
         // ============================================================
 
-        // Observer untuk empty state
         const observer = new MutationObserver(() => updateEmptyState());
         observer.observe(container, { childList: true, subtree: true });
 
-        console.log('💬 Ja\'O Chating & Call + Flip Camera siap!');
+        console.log('💬 Ja\'O Chating & Call siap!');
+        console.log('📎 Ikon klip (paperclip) seperti WhatsApp untuk lampirkan gambar');
         console.log('📸 Gunakan tombol 🔄 untuk ganti kamera depan/belakang saat video call');
-        console.log('📱 Fitur flip camera seperti di WhatsApp');
     </script>
 </body>
 </html>
