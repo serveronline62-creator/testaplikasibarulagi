@@ -723,15 +723,15 @@
             color: #999;
         }
 
-        /* ----- INPUT AREA ----- */
+        /* ----- INPUT AREA - Style WhatsApp ----- */
         .input-area {
-            padding: 8px 12px 12px;
+            padding: 6px 10px 8px;
             background: #f0f0f0;
             border-top: 1px solid #d1d1d1;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .reply-indicator {
@@ -818,12 +818,14 @@
             color: #00a884;
         }
 
+        /* Input row seperti WhatsApp */
         .input-row {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
             flex-wrap: nowrap;
         }
+
         .input-row .icon-btn {
             background: transparent;
             border: none;
@@ -852,11 +854,13 @@
             opacity: 0.5;
             pointer-events: none;
         }
-        .input-row input[type="text"] {
+
+        /* Input pesan seperti WhatsApp */
+        .input-row .msg-input {
             flex: 1;
-            padding: 10px 14px;
+            padding: 9px 14px;
             border: none;
-            border-radius: 30px;
+            border-radius: 20px;
             background: #ffffff;
             color: #1a1a1a;
             font-size: 15px;
@@ -865,22 +869,39 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
             min-width: 0;
             -webkit-appearance: none;
+            max-height: 100px;
+            line-height: 1.4;
         }
-        .input-row input[type="text"]::placeholder {
+        .input-row .msg-input::placeholder {
             color: #a0a0a0;
         }
-        .input-row input[type="text"]:focus {
+        .input-row .msg-input:focus {
             box-shadow: 0 0 0 2px #00a884;
         }
-        .input-row input[type="text"].name-input {
-            flex: 0 0 100px;
+
+        /* Nama input di samping */
+        .input-row .name-input {
+            flex: 0 0 90px;
             font-weight: 500;
             background: #f8f8f8;
-        }
-        .input-row button.send-btn {
-            padding: 10px 18px;
+            padding: 9px 12px;
             border: none;
-            border-radius: 30px;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            color: #1a1a1a;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            -webkit-appearance: none;
+        }
+        .input-row .name-input:focus {
+            box-shadow: 0 0 0 2px #00a884;
+        }
+
+        /* Tombol Kirim - seperti WhatsApp (ikon paperclip di kiri, send di kanan) */
+        .input-row .send-btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 20px;
             background: #00a884;
             color: #fff;
             font-size: 15px;
@@ -894,36 +915,47 @@
             box-shadow: 0 2px 8px rgba(0, 168, 132, 0.3);
             flex-shrink: 0;
         }
-        .input-row button.send-btn:hover {
+        .input-row .send-btn:hover {
             background: #008f72;
             transform: scale(1.02);
             box-shadow: 0 4px 16px rgba(0, 168, 132, 0.4);
         }
-        .input-row button.send-btn:active {
+        .input-row .send-btn:active {
             transform: scale(0.97);
         }
-        .input-row button.send-btn:disabled {
+        .input-row .send-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
-        /* Gaya khusus untuk tombol attach (klip) seperti WhatsApp */
-        .input-row .icon-btn#attachBtn {
-            font-size: 24px;
+        /* Tombol attach (klip) seperti WhatsApp */
+        .input-row .attach-btn {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
             color: #54656f;
-            transform: rotate(-45deg);
-            transition: transform 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
-        .input-row .icon-btn#attachBtn:hover {
-            transform: rotate(-45deg) scale(1.05);
+        .input-row .attach-btn:hover {
             background: rgba(0, 0, 0, 0.06);
         }
-        .input-row .icon-btn#attachBtn:active {
-            transform: rotate(-45deg) scale(0.9);
+        .input-row .attach-btn:active {
+            transform: scale(0.9);
         }
-        .input-row .icon-btn#attachBtn.uploading {
+        .input-row .attach-btn.uploading {
             opacity: 0.5;
             pointer-events: none;
         }
@@ -1517,24 +1549,26 @@
                 font-size: 14px;
                 padding: 8px 12px;
             }
-            .input-row input[type="text"].name-input {
-                flex: 0 0 80px;
-                font-size: 14px;
-                padding: 8px 12px;
+            .input-row .name-input {
+                flex: 0 0 70px;
+                font-size: 13px;
+                padding: 8px 10px;
             }
-            .input-row input[type="text"].msg-input {
+            .input-row .msg-input {
                 font-size: 14px;
                 padding: 8px 12px;
             }
             .input-row .icon-btn {
-                width: 36px;
-                height: 36px;
+                width: 34px;
+                height: 34px;
                 font-size: 18px;
             }
-            .input-row .icon-btn#attachBtn {
-                font-size: 20px;
+            .input-row .attach-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 18px;
             }
-            .input-row button.send-btn {
+            .input-row .send-btn {
                 padding: 8px 14px;
                 font-size: 14px;
             }
@@ -1654,18 +1688,21 @@
             .input-row {
                 flex-wrap: wrap;
             }
-            .input-row input[type="text"].name-input {
+            .input-row .name-input {
                 flex: 1 1 100%;
             }
-            .input-row input[type="text"].msg-input {
+            .input-row .msg-input {
                 flex: 1 1 60%;
             }
-            .input-row button.send-btn {
+            .input-row .send-btn {
                 flex: 1;
                 justify-content: center;
             }
             .input-row .icon-btn {
-                flex: 0 0 36px;
+                flex: 0 0 34px;
+            }
+            .input-row .attach-btn {
+                flex: 0 0 34px;
             }
             .call-history-item .ch-meta {
                 flex-direction: column;
@@ -1761,7 +1798,7 @@
             </div>
         </div>
 
-        <!-- INPUT AREA -->
+        <!-- INPUT AREA - Style WhatsApp -->
         <div class="input-area">
             <div class="reply-indicator" id="replyIndicator">
                 <div class="reply-info">
@@ -1781,8 +1818,7 @@
             <div class="input-row">
                 <input type="text" class="name-input" id="nameInput" placeholder="Nama" maxlength="20" value="User" readonly />
                 <input type="text" class="msg-input" id="messageInput" placeholder="Ketik pesan..." maxlength="500" autocomplete="off" />
-                <!-- Tombol attach dengan icon klip (paperclip) seperti WhatsApp -->
-                <button class="icon-btn" id="attachBtn" title="Lampirkan file"><i class="fas fa-paperclip"></i></button>
+                <button class="attach-btn" id="attachBtn" title="Lampirkan"><i class="fas fa-paperclip"></i></button>
                 <button class="icon-btn" id="emojiToggle" type="button" aria-label="Emoji"><i class="far fa-smile"></i></button>
                 <button class="send-btn" id="sendBtn">
                     <span>Kirim</span>
@@ -4184,9 +4220,9 @@
         const observer = new MutationObserver(() => updateEmptyState());
         observer.observe(container, { childList: true, subtree: true });
 
-        console.log('💬 Ja\'O Chating & Call siap!');
-        console.log('📎 Ikon klip (paperclip) seperti WhatsApp untuk lampirkan gambar');
-        console.log('📸 Gunakan tombol 🔄 untuk ganti kamera depan/belakang saat video call');
+        console.log('💬 Ja\'O Chating & Call dengan ikon klip WhatsApp siap!');
+        console.log('📎 Ikon lampiran sekarang menggunakan paperclip seperti WhatsApp');
+        console.log('🔄 Flip camera tersedia untuk video call');
     </script>
 </body>
 </html>
